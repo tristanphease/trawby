@@ -8,5 +8,8 @@
             "dom",
             "deno.window"
         ]
+    },
+    "fmt": {
+        "indentWidth": 4
     }
 }
