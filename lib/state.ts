@@ -1,12 +1,13 @@
+class CanvasStateManager<S> {
+    currentState: S;
 
-class CanvasStateManager<T> {
-    currentState: T;
-
-    constructor(startState: T) {
+    constructor(startState: S) {
         this.currentState = startState;
     }
 
-
+    public setState(newState: S) {
+        this.currentState = newState;
+    }
 }
 
 export default CanvasStateManager;

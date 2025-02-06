@@ -1,4 +1,3 @@
-
 export default class CanvasManager {
     private canvas: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
@@ -15,5 +14,9 @@ export default class CanvasManager {
 
     public getContext(): CanvasRenderingContext2D {
         return this.ctx;
+    }
+
+    public clearCanvas(): void {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
 }

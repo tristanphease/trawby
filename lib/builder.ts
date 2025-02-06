@@ -1,17 +1,18 @@
+import type AnimObjectInfo from "./animObjectInfo.ts";
 import AnimManager from "./animManager.ts";
-import type AnimObject from "./animObject.ts";
 import AnimRunner from "./animRunner.ts";
 import CanvasManager from "./canvas.ts";
 import CanvasStateManager from "./state.ts";
+import type AnimObject from "./animObject.ts";
 
 export interface AnimBuilder {
     withState<T>(startState: T): AnimBuilderWithState<T>;
 }
 
-export interface AnimBuilderWithState<T> {
-    withDimensions(width: number, height: number): void;
-    addAnim(animObject: AnimObject): void;
-    build(): AnimManager<T>;
+export interface AnimBuilderWithState<S> {
+    withDimensions(width: number, height: number): AnimBuilderWithState<S>;
+    addAnim(anim: AnimObjectInfo<S, AnimObject>): AnimBuilderWithState<S>;
+    build(): AnimManager<S>;
 }
 
 export class AnimBuilderObject implements AnimBuilder {
@@ -26,45 +27,52 @@ export class AnimBuilderObject implements AnimBuilder {
         this.canvasManager = new CanvasManager(canvas);
     }
 
-    withState<T>(startState: T) {
-        return new AnimBuilderObjectWithState<T>(
+    withState<S>(startState: S) {
+        return new AnimBuilderObjectWithState<S>(
             this.canvasManager,
             startState,
         );
     }
 }
 
-export class AnimBuilderObjectWithState<T> implements AnimBuilderWithState<T> {
+export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
     dims: { width: number; height: number };
-    stateManager: CanvasStateManager<T>;
+    stateManager: CanvasStateManager<S>;
     canvasManager: CanvasManager;
-    anims: Array<AnimObject>;
+    anims: Array<AnimObjectInfo<S, AnimObject>>;
 
-    constructor(canvasManager: CanvasManager, startState: T) {
+    constructor(canvasManager: CanvasManager, startState: S) {
         this.canvasManager = canvasManager;
-        this.stateManager = new CanvasStateManager<T>(startState);
+        this.stateManager = new CanvasStateManager<S>(startState);
 
         //defaults
         this.dims = { width: 500, height: 300 };
         this.anims = [];
     }
 
-    addAnim(animObject: AnimObject): void {
-        this.anims.push(animObject);
+    addAnim(
+        anim: AnimObjectInfo<S, AnimObject>,
+    ): AnimBuilderObjectWithState<S> {
+        this.anims.push(anim);
+        return this;
     }
 
-    withDimensions(width: number, height: number): void {
+    withDimensions(
+        width: number,
+        height: number,
+    ): AnimBuilderObjectWithState<S> {
         this.dims = { width, height };
+        return this;
     }
 
-    build(): AnimManager<T> {
+    build(): AnimManager<S> {
         const animRunner = new AnimRunner();
-        this.anims.forEach((a) => animRunner.addAnim(a));
 
         const animManager = new AnimManager(
             animRunner,
             this.canvasManager,
             this.stateManager,
+            this.anims,
         );
         return animManager;
     }
