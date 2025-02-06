@@ -16,7 +16,7 @@ class AnimTimer {
         return this.currentTime;
     }
 
-    public updateAndGetDeltaTime() {
+    public updateAndGetDeltaTime(): number {
         const newTime = performance.now();
 
         if (this.lastTime === null) {
