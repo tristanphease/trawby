@@ -68,6 +68,8 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
     build(): AnimManager<S> {
         const animRunner = new AnimRunner();
 
+        this.canvasManager.setDimensions(this.dims.width, this.dims.height);
+
         const animManager = new AnimManager(
             animRunner,
             this.canvasManager,

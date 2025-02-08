@@ -36,7 +36,12 @@ class AnimManager<S> {
 
     start() {
         for (const anim of this.animations) {
-            this.animRunner.addAnim(anim.getAnimObject());
+            const animObject = anim.getAnimObject();
+            const context = this.canvasManager.getContext();
+            if (animObject.start) {
+                animObject.start(context);
+            }
+            this.animRunner.addAnim(animObject);
             anim.run(this.animUtil);
         }
 
@@ -44,8 +49,6 @@ class AnimManager<S> {
     }
 
     update() {
-        const context = this.canvasManager.getContext();
-
         const deltaTime = this.animTimer.updateAndGetDeltaTime();
 
         // updates
@@ -63,6 +66,10 @@ class AnimManager<S> {
             }
         }
 
+        this.canvasManager.clearCanvas();
+
+        const context = this.canvasManager.getContext();
+
         // draw anim objects
         this.animRunner.draw(context);
 
@@ -76,6 +83,10 @@ class AnimManager<S> {
 
     setState(newState: S) {
         this.canvasStateManager.setState(newState);
+    }
+
+    public setZoomPoint(zoomAmount: number, x: number, y: number) {
+        this.animRunner.setZoomPoint(zoomAmount, x, y);
     }
 }
 export default AnimManager;

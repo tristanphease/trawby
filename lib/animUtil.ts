@@ -41,6 +41,10 @@ class AnimUtil<S> {
         });
     }
 
+    public setZoomPoint(zoomAmount: number, x: number, y: number) {
+        this.animManager.setZoomPoint(zoomAmount, x, y);
+    }
+
     public setState(newState: S) {
     }
 }
