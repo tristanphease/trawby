@@ -1,17 +1,16 @@
 import type AnimInterpInfo from "./animInterp.ts";
-import type AnimObject from "./animObject.ts";
-import type AnimObjectInfo from "./animObjectInfo.ts";
 import type AnimRunner from "./animRunner.ts";
 import AnimTimer from "./animTimer.ts";
 import AnimUtil from "./animUtil.ts";
 import type CanvasManager from "./canvas.ts";
 import type CanvasStateManager from "./state.ts";
+import type StateAnims from "./stateAnims.ts";
 
 class AnimManager<S> {
     animRunner: AnimRunner;
     canvasManager: CanvasManager;
     canvasStateManager: CanvasStateManager<S>;
-    animations: Array<AnimObjectInfo<S, AnimObject>>;
+    stateAnimations: Map<S, StateAnims<S>>;
 
     // not passed in
     animTimer: AnimTimer;
@@ -22,12 +21,12 @@ class AnimManager<S> {
         animRunner: AnimRunner,
         canvasManager: CanvasManager,
         canvasStateManager: CanvasStateManager<S>,
-        animations: Array<AnimObjectInfo<S, AnimObject>>,
+        stateAnimations: Map<S, StateAnims<S>>,
     ) {
         this.animRunner = animRunner;
         this.canvasManager = canvasManager;
         this.canvasStateManager = canvasStateManager;
-        this.animations = animations;
+        this.stateAnimations = stateAnimations;
 
         this.animTimer = new AnimTimer();
         this.animUtil = new AnimUtil<S>(this);
@@ -35,14 +34,20 @@ class AnimManager<S> {
     }
 
     start() {
-        for (const anim of this.animations) {
-            const animObject = anim.getAnimObject();
-            const context = this.canvasManager.getContext();
-            if (animObject.start) {
-                animObject.start(context);
+        const startState = this.canvasStateManager.currentState;
+
+        const stateAnimations = this.stateAnimations.get(startState);
+
+        if (stateAnimations) {
+            for (const anim of stateAnimations.anims) {
+                const animObject = anim.getAnimObject();
+                const context = this.canvasManager.getContext();
+                if (animObject.start) {
+                    animObject.start(context);
+                }
+                this.animRunner.addAnim(animObject);
+                anim.run(this.animUtil);
             }
-            this.animRunner.addAnim(animObject);
-            anim.run(this.animUtil);
         }
 
         globalThis.requestAnimationFrame(this.update.bind(this));
@@ -77,11 +82,15 @@ class AnimManager<S> {
         globalThis.requestAnimationFrame(this.update.bind(this));
     }
 
-    addInterp(animInterpInfo: AnimInterpInfo) {
+    public waitTime(timeToWait: number): Promise<void> {
+        return this.animTimer.waitTime(timeToWait);
+    }
+
+    public addInterp(animInterpInfo: AnimInterpInfo) {
         this.interpAnimations.push(animInterpInfo);
     }
 
-    setState(newState: S) {
+    public setState(newState: S) {
         this.canvasStateManager.setState(newState);
     }
 

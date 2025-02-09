@@ -11,9 +11,7 @@ class AnimUtil<S> {
 
     /* waits for the time provided in milliseconds */
     public waitTime(timeInMs: number): Promise<void> {
-        return new Promise((resolve) => {
-            setTimeout(() => resolve(), timeInMs);
-        });
+        return this.animManager.waitTime(timeInMs);
     }
 
     /**
@@ -46,6 +44,7 @@ class AnimUtil<S> {
     }
 
     public setState(newState: S) {
+        this.animManager.setState(newState);
     }
 }
 

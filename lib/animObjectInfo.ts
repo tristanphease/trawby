@@ -5,10 +5,12 @@ import type AnimUtil from "./animUtil.ts";
 class AnimObjectInfo<S, T extends AnimObject> {
     private animObject: T;
     private animFunctions: Array<AnimFunction<S, T>>;
+    private completedAnims: number;
 
     constructor(animObject: T) {
         this.animObject = animObject;
         this.animFunctions = [];
+        this.completedAnims = 0;
     }
 
     public withAnim(animFunction: AnimFunction<S, T>) {
@@ -21,8 +23,13 @@ class AnimObjectInfo<S, T extends AnimObject> {
 
     public run(animUtil: AnimUtil<S>) {
         for (const animFunction of this.animFunctions) {
-            animFunction(this.animObject, animUtil);
+            animFunction(this.animObject, animUtil)
+                .then(() => this.completedAnims += 1);
         }
+    }
+
+    public hasCompletedAnims(): boolean {
+        return this.completedAnims === this.animFunctions.length;
     }
 }
 

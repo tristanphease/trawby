@@ -1,10 +1,6 @@
 // main exports go here
 
-import { type AnimBuilder, AnimBuilderObject } from "./lib/builder.ts";
-
-export function createAnim(canvasId: string): AnimBuilder {
-    return new AnimBuilderObject(canvasId);
-}
+export { AnimStateBuilder, createAnim } from "./lib/builder.ts";
 
 export type { default as AnimObject } from "./lib/animObject.ts";
 
