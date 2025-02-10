@@ -42,10 +42,20 @@ export default class AnimUtil<S> {
         });
     }
 
+    /**
+     * Function for zooming in and out of the canvas
+     * @param zoomAmount Amount to zoom to
+     * @param x x value of point to zoom on
+     * @param y y value of point to zoom on
+     */
     public setZoomPoint(zoomAmount: number, x: number, y: number) {
         this.animManager.setZoomPoint(zoomAmount, x, y);
     }
 
+    /**
+     * Sets the state, will cancel all running anims and continue with the anim as it is
+     * @param newState
+     */
     public setState(newState: S) {
         this.animManager.setState(newState);
     }

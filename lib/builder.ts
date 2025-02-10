@@ -124,7 +124,7 @@ export class AnimStateBuilder<S> {
         this.events = new Map();
     }
 
-    /** Adds an anim */
+    /** Adds an anim to be run */
     addAnim(
         anim: AnimObjectInfo<S, AnimObject>,
     ): AnimStateBuilder<S> {
@@ -141,11 +141,11 @@ export class AnimStateBuilder<S> {
         type: StateEventEnum,
         callback: (animUtil: AnimUtil<S>) => void,
     ): void {
-        if (this.events.has(type)) {
+        if (!this.events.has(type)) {
             this.events.set(type, [callback]);
         } else {
             const eventArray = this.events.get(type);
-            eventArray?.push(callback);
+            eventArray!.push(callback);
         }
     }
 
@@ -177,13 +177,10 @@ export class AnimStateBuilder<S> {
 
     /** Builds the AnimState for use in the AnimBuilder */
     build(): StateAnims<S> {
-        const startAnims = this.events.get(StateEventEnum.Start) ?? [];
-        const endAnims = this.events.get(StateEventEnum.End) ?? [];
         return new StateAnims<S>(
             this.state,
             this.anims,
-            startAnims,
-            endAnims,
+            this.events,
         );
     }
 }

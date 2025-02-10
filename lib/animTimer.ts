@@ -7,7 +7,8 @@ type WaitInfo = {
     rejectFunction: () => void;
 };
 
-class AnimTimer {
+/** Timer for animations */
+export default class AnimTimer {
     private currentTime: number;
     private lastTime: number | null;
 
@@ -19,15 +20,18 @@ class AnimTimer {
         this.waits = [];
     }
 
+    /** Start the timer */
     public start() {
         this.lastTime = performance.now();
         this.currentTime = 0;
     }
 
+    /** Get what the current time is, milliseconds since anim timer was started */
     public getCurrentTime(): number {
         return this.currentTime;
     }
 
+    /** Updates the timer and returns the delta since the last timer */
     public updateAndGetDeltaTime(): number {
         const newTime = performance.now();
 
@@ -50,6 +54,11 @@ class AnimTimer {
         return deltaTime;
     }
 
+    /**
+     * Function for asynchronously waiting an amount of time before continuing
+     * @param timeToWait Time to wait in milliseconds
+     * @returns A promise that completes when the time is finished
+     */
     public waitTime(timeToWait: number): Promise<void> {
         const startTime = this.currentTime;
         return new Promise((resolve, reject) => {
@@ -64,6 +73,7 @@ class AnimTimer {
         });
     }
 
+    /** Cancels all the animations within the timer */
     public cancelAnims() {
         for (const waitInfo of this.waits) {
             waitInfo.rejectFunction();
@@ -71,5 +81,3 @@ class AnimTimer {
         this.waits = [];
     }
 }
-
-export default AnimTimer;

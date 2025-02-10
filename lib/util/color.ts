@@ -1,4 +1,4 @@
-/** A color for use */
+/** A utility color class for usage in this library */
 export default class Color {
     red: number;
     green: number;
