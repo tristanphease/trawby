@@ -14,10 +14,11 @@ export default class AnimRunner {
         this.zoomAmount = 1;
     }
 
-    addAnim(animObject: AnimObject) {
+    addAnimObject(animObject: AnimObject) {
         this.animObjects.push(animObject);
     }
 
+    /** Main draw loop for anim objects */
     public draw(ctx: CanvasRenderingContext2D): void {
         ctx.save();
 

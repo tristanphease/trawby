@@ -1,22 +1,50 @@
 import type AnimObject from "./animObject.ts";
 import type AnimObjectInfo from "./animObjectInfo.ts";
 import type AnimUtil from "./animUtil.ts";
+import type { StateEventEnum } from "./builder.ts";
 
 export default class StateAnims<S> {
     state: S;
     anims: Array<AnimObjectInfo<S, AnimObject>>;
-    onStart: Array<(animUtil: AnimUtil<S>) => void>;
-    onEnd: Array<(animUtil: AnimUtil<S>) => void>;
+    stateEvents: Map<StateEventEnum, Array<(animUtil: AnimUtil<S>) => void>>;
+
+    completed: boolean;
 
     constructor(
         state: S,
         anims: Array<AnimObjectInfo<S, AnimObject>>,
-        onStart: Array<(animUtil: AnimUtil<S>) => void>,
-        onEnd: Array<(animUtil: AnimUtil<S>) => void>,
+        stateEvents: Map<
+            StateEventEnum,
+            Array<(animUtil: AnimUtil<S>) => void>
+        >,
     ) {
         this.state = state;
         this.anims = anims;
-        this.onStart = onStart;
-        this.onEnd = onEnd;
+        this.stateEvents = stateEvents;
+        this.completed = false;
+    }
+
+    /** Checks if animations have just all completed */
+    public checkJustCompletedAnims(): boolean {
+        if (this.completed) {
+            return false;
+        }
+
+        for (const anim of this.anims) {
+            if (!anim.hasCompletedAnims()) {
+                return false;
+            }
+        }
+
+        this.completed = true;
+        return true;
+    }
+
+    /** Runs events for the enum as specified */
+    public runEvents(stateEvent: StateEventEnum, animUtil: AnimUtil<S>) {
+        const events = this.stateEvents.get(stateEvent) || [];
+        for (const func of events) {
+            func(animUtil);
+        }
     }
 }

@@ -2,6 +2,7 @@ import type AnimInterpInfo from "./animInterp.ts";
 import type AnimRunner from "./animRunner.ts";
 import AnimTimer from "./animTimer.ts";
 import AnimUtil from "./animUtil.ts";
+import { StateEventEnum } from "./builder.ts";
 import type CanvasManager from "./canvas.ts";
 import type CanvasStateManager from "./state.ts";
 import type StateAnims from "./stateAnims.ts";
@@ -33,7 +34,8 @@ class AnimManager<S> {
         this.interpAnimations = [];
     }
 
-    start() {
+    /** Starts the animation */
+    public start() {
         const startState = this.canvasStateManager.currentState;
 
         this.startState(startState);
@@ -45,9 +47,7 @@ class AnimManager<S> {
         const stateAnimations = this.stateAnimations.get(newState);
 
         if (stateAnimations) {
-            for (const onStartFunction of stateAnimations.onStart) {
-                onStartFunction(this.animUtil);
-            }
+            stateAnimations.runEvents(StateEventEnum.Start, this.animUtil);
 
             for (const anim of stateAnimations.anims) {
                 const animObject = anim.getAnimObject();
@@ -55,7 +55,7 @@ class AnimManager<S> {
                 if (animObject.start) {
                     animObject.start(context);
                 }
-                this.animRunner.addAnim(animObject);
+                this.animRunner.addAnimObject(animObject);
                 anim.run(this.animUtil);
             }
         }
@@ -72,16 +72,15 @@ class AnimManager<S> {
         const stateAnimations = this.stateAnimations.get(currentState);
 
         if (stateAnimations) {
-            for (const onEndFunction of stateAnimations.onEnd) {
-                onEndFunction(this.animUtil);
-            }
+            stateAnimations.runEvents(StateEventEnum.End, this.animUtil);
         }
     }
 
-    update() {
+    /** Main update loop */
+    private update() {
         const deltaTime = this.animTimer.updateAndGetDeltaTime();
 
-        // updates
+        // update interpolated animations
         for (
             let index = this.interpAnimations.length - 1;
             index >= 0;
@@ -94,6 +93,17 @@ class AnimManager<S> {
             if (animInterp.isCompleted()) {
                 animInterp.completeFunction();
                 this.interpAnimations.splice(index, 1);
+            }
+        }
+        // check for completed anims
+        const currentState = this.canvasStateManager.currentState;
+        const animState = this.stateAnimations.get(currentState);
+        if (animState) {
+            if (animState.checkJustCompletedAnims()) {
+                animState.runEvents(
+                    StateEventEnum.AnimsCompleted,
+                    this.animUtil,
+                );
             }
         }
 
