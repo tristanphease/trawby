@@ -5,20 +5,23 @@ class AnimInterpInfo {
     totalTime: number;
     callbackFunction: (value: number) => void;
 
-    onEnd: () => void;
+    completeFunction: () => void;
+    cancelFunction: () => void;
     timeThrough: number;
 
     constructor(
         keyFrames: Array<AnimKeyframe>,
         totalTime: number,
         callbackFn: (value: number) => void,
-        onEnd: () => void,
+        completeFunction: () => void,
+        cancelFunction: () => void,
     ) {
         this.keyFrames = keyFrames;
         this.totalTime = totalTime;
         this.callbackFunction = callbackFn;
 
-        this.onEnd = onEnd;
+        this.completeFunction = completeFunction;
+        this.cancelFunction = cancelFunction;
         this.timeThrough = 0;
     }
 

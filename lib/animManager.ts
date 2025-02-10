@@ -36,9 +36,19 @@ class AnimManager<S> {
     start() {
         const startState = this.canvasStateManager.currentState;
 
-        const stateAnimations = this.stateAnimations.get(startState);
+        this.startState(startState);
+
+        globalThis.requestAnimationFrame(this.update.bind(this));
+    }
+
+    private startState(newState: S) {
+        const stateAnimations = this.stateAnimations.get(newState);
 
         if (stateAnimations) {
+            for (const onStartFunction of stateAnimations.onStart) {
+                onStartFunction(this.animUtil);
+            }
+
             for (const anim of stateAnimations.anims) {
                 const animObject = anim.getAnimObject();
                 const context = this.canvasManager.getContext();
@@ -49,8 +59,23 @@ class AnimManager<S> {
                 anim.run(this.animUtil);
             }
         }
+    }
 
-        globalThis.requestAnimationFrame(this.update.bind(this));
+    private endState(currentState: S) {
+        // on end of state, kill all running anims
+        this.animTimer.cancelAnims();
+        for (const interpAnim of this.interpAnimations) {
+            interpAnim.cancelFunction();
+        }
+        this.interpAnimations = [];
+
+        const stateAnimations = this.stateAnimations.get(currentState);
+
+        if (stateAnimations) {
+            for (const onEndFunction of stateAnimations.onEnd) {
+                onEndFunction(this.animUtil);
+            }
+        }
     }
 
     update() {
@@ -67,6 +92,7 @@ class AnimManager<S> {
             animInterp.update(deltaTime);
 
             if (animInterp.isCompleted()) {
+                animInterp.completeFunction();
                 this.interpAnimations.splice(index, 1);
             }
         }
@@ -91,7 +117,11 @@ class AnimManager<S> {
     }
 
     public setState(newState: S) {
-        this.canvasStateManager.setState(newState);
+        if (this.canvasStateManager.currentState !== newState) {
+            this.endState(this.canvasStateManager.currentState);
+            this.startState(newState);
+            this.canvasStateManager.setState(newState);
+        }
     }
 
     public setZoomPoint(zoomAmount: number, x: number, y: number) {

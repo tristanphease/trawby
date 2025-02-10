@@ -5,6 +5,7 @@ import CanvasManager from "./canvas.ts";
 import CanvasStateManager from "./state.ts";
 import type AnimObject from "./animObject.ts";
 import StateAnims from "./stateAnims.ts";
+import type AnimUtil from "./animUtil.ts";
 
 export interface AnimBuilder {
     withState<T>(startState: T): AnimBuilderWithState<T>;
@@ -18,10 +19,24 @@ export interface AnimBuilderWithState<S> {
     build(): AnimManager<S>;
 }
 
+/**
+ * Creates a builder for creating the animation.
+ *
+ * Example:
+ * ```ts
+ * createAnim("canvasId")
+ *     .withState<States>(States.StartState)
+ *     ...
+ * ```
+ *
+ * @param canvasId the string id for the canvas
+ * @returns animBuilder to be used for building up the anim
+ */
 export function createAnim(canvasId: string): AnimBuilder {
     return new AnimBuilderObject(canvasId);
 }
 
+/** Object for building the animations */
 export class AnimBuilderObject implements AnimBuilder {
     canvasManager: CanvasManager;
 
@@ -34,7 +49,8 @@ export class AnimBuilderObject implements AnimBuilder {
         this.canvasManager = new CanvasManager(canvas);
     }
 
-    withState<S>(startState: S) {
+    /** Creates the states that the builder functions for. */
+    public withState<S>(startState: S) {
         return new AnimBuilderObjectWithState<S>(
             this.canvasManager,
             startState,
@@ -42,6 +58,7 @@ export class AnimBuilderObject implements AnimBuilder {
     }
 }
 
+/** Object for building the animations with a defined state */
 export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
     dims: { width: number; height: number };
     stateManager: CanvasStateManager<S>;
@@ -57,6 +74,7 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
         this.stateAnims = new Map();
     }
 
+    /** Adds the state anims to the animation being built */
     addStateAnims(
         stateAnims: AnimStateBuilder<S>,
     ): AnimBuilderObjectWithState<S> {
@@ -64,6 +82,7 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
         return this;
     }
 
+    /** Sets the canvas dimensions to the values provided */
     withDimensions(
         width: number,
         height: number,
@@ -72,6 +91,7 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
         return this;
     }
 
+    /** Builds the animation and creates an AnimManager */
     build(): AnimManager<S> {
         const animRunner = new AnimRunner();
 
@@ -92,17 +112,19 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
     }
 }
 
+/** Builder object for creating an anim */
 export class AnimStateBuilder<S> {
     anims: Array<AnimObjectInfo<S, AnimObject>>;
     state: S;
-    events: Map<StateEventEnum, Array<() => void>>;
+    events: Map<StateEventEnum, Array<(animUtil: AnimUtil<S>) => void>>;
 
     constructor(state: S) {
-        this.state = state;
         this.anims = [];
+        this.state = state;
         this.events = new Map();
     }
 
+    /** Adds an anim */
     addAnim(
         anim: AnimObjectInfo<S, AnimObject>,
     ): AnimStateBuilder<S> {
@@ -110,9 +132,14 @@ export class AnimStateBuilder<S> {
         return this;
     }
 
+    /**
+     * Adds an event to the animState to be run when an event occurs
+     * @param type The state event to trigger the event on
+     * @param callback The function to callback when the event occurs
+     */
     addEventListener(
         type: StateEventEnum,
-        callback: () => void,
+        callback: (animUtil: AnimUtil<S>) => void,
     ): void {
         if (this.events.has(type)) {
             this.events.set(type, [callback]);
@@ -122,21 +149,33 @@ export class AnimStateBuilder<S> {
         }
     }
 
+    /**
+     * Removes an event from the animState
+     * @param type The state event to remove the event fror
+     * @param callback The function to remove from the animState
+     * @returns Whether the event was removed
+     */
     removeEventListener(
         type: StateEventEnum,
-        callback: () => void,
-    ): void {
+        callback: (animUtil: AnimUtil<S>) => void,
+    ): boolean {
         const eventArray = this.events.get(type);
+
+        let removed = false;
 
         if (eventArray) {
             for (let index = eventArray.length - 1; index >= 0; index--) {
                 if (eventArray[index] == callback) {
                     eventArray.splice(index, 1);
+                    removed = true;
                 }
             }
         }
+
+        return removed;
     }
 
+    /** Builds the AnimState for use in the AnimBuilder */
     build(): StateAnims<S> {
         const startAnims = this.events.get(StateEventEnum.Start) ?? [];
         const endAnims = this.events.get(StateEventEnum.End) ?? [];
@@ -149,11 +188,17 @@ export class AnimStateBuilder<S> {
     }
 }
 
+/** Events for states to run code on them */
 export enum StateEventEnum {
+    /** When a state starts */
     Start,
+    /** When a state ends */
     End,
+    /** When a state has all its animations completed */
+    AnimsCompleted,
 }
 
+/** Error when the canvas with the id provided can't be found */
 class CanvasNotFoundError extends Error {
     constructor(id: string) {
         super(`Couldn't find canvas with id ${id}`);

@@ -24,7 +24,14 @@ class AnimObjectInfo<S, T extends AnimObject> {
     public run(animUtil: AnimUtil<S>) {
         for (const animFunction of this.animFunctions) {
             animFunction(this.animObject, animUtil)
-                .then(() => this.completedAnims += 1);
+                .then(() => this.completedAnims += 1)
+                .catch((error) => {
+                    if (error.isCancelled) {
+                        // ignore this since we're just cancelling
+                    } else {
+                        console.error("Error found in animation: ", error);
+                    }
+                });
         }
     }
 
