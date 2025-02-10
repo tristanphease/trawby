@@ -2,7 +2,7 @@ import AnimInterpInfo from "./animInterp.ts";
 import type AnimManager from "./animManager.ts";
 import type { AnimKeyframe } from "./keyframe.ts";
 
-class AnimUtil<S> {
+export default class AnimUtil<S> {
     private animManager: AnimManager<S>;
 
     constructor(animManager: AnimManager<S>) {
@@ -26,13 +26,16 @@ class AnimUtil<S> {
         timeTaken: number,
         callbackFn: (value: number) => void,
     ): Promise<void> {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             const animInterp = new AnimInterpInfo(
                 keyframes,
                 timeTaken,
                 callbackFn,
                 () => {
                     resolve();
+                },
+                () => {
+                    reject(new AnimCancelled());
                 },
             );
             this.animManager.addInterp(animInterp);
@@ -48,4 +51,6 @@ class AnimUtil<S> {
     }
 }
 
-export default AnimUtil;
+export class AnimCancelled {
+    public isCancelled: true = true;
+}

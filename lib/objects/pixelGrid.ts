@@ -6,8 +6,7 @@ type PixelGridOptions = {
 };
 
 /**
- * Optimised pixel grid
- * Based on https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Pixel_manipulation_with_canvas
+ * Optimised pixel grid, uses [ImageData](https://developer.mozilla.org/en-US/docs/Web/API/ImageData) underneath.
  */
 export default class PixelGrid implements AnimObject {
     private imageData: ImageData | null;
@@ -39,6 +38,7 @@ export default class PixelGrid implements AnimObject {
         }
     }
 
+    /** Start the pixel grid, used internally */
     start(context: CanvasRenderingContext2D) {
         this.imageData = context.createImageData(this.width, this.height);
         if (this.defaultColor !== null) {
@@ -54,7 +54,8 @@ export default class PixelGrid implements AnimObject {
         return y * this.width * 4 + x * 4;
     }
 
-    getPixel(x: number, y: number): Color {
+    /** Gets the color set at the pixel (x, y) */
+    public getPixel(x: number, y: number): Color {
         const index = this.getIndex(x, y);
         const red = this.imageData!.data[index];
         const green = this.imageData!.data[index + 1];
@@ -62,7 +63,8 @@ export default class PixelGrid implements AnimObject {
         return new Color(red, green, blue);
     }
 
-    setPixel(x: number, y: number, color: Color) {
+    /** Sets the pixel at (x, y) to the color passed in */
+    public setPixel(x: number, y: number, color: Color) {
         const index = this.getIndex(x, y);
         this.imageData!.data[index] = color.red;
         this.imageData!.data[index + 1] = color.green;
@@ -70,6 +72,7 @@ export default class PixelGrid implements AnimObject {
         this.imageData!.data[index + 3] = 255;
     }
 
+    /** Draws the pixel grid on the canvas */
     draw(ctx: CanvasRenderingContext2D): void {
         ctx.putImageData(this.imageData!, this.x, this.y);
     }

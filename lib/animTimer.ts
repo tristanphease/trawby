@@ -1,7 +1,10 @@
+import { AnimCancelled } from "./animUtil.ts";
+
 type WaitInfo = {
     startTime: number;
     waitTime: number;
     resolveFunction: () => void;
+    rejectFunction: () => void;
 };
 
 class AnimTimer {
@@ -49,13 +52,23 @@ class AnimTimer {
 
     public waitTime(timeToWait: number): Promise<void> {
         const startTime = this.currentTime;
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             this.waits.push({
                 startTime,
                 waitTime: timeToWait,
                 resolveFunction: resolve,
+                rejectFunction: () => {
+                    reject(new AnimCancelled());
+                },
             });
         });
+    }
+
+    public cancelAnims() {
+        for (const waitInfo of this.waits) {
+            waitInfo.rejectFunction();
+        }
+        this.waits = [];
     }
 }
 

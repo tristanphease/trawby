@@ -1,3 +1,4 @@
+/** A color for use */
 export default class Color {
     red: number;
     green: number;
@@ -9,7 +10,8 @@ export default class Color {
         this.blue = b;
     }
 
-    toHexString(): string {
+    /** Generate hex string for use in other color related sections */
+    public toHexString(): string {
         const red = hexStringFromNumber(this.red);
         const green = hexStringFromNumber(this.green);
         const blue = hexStringFromNumber(this.blue);
@@ -25,6 +27,7 @@ function hexStringFromNumber(colorValue: number) {
     return colorString;
 }
 
+/** Creates a color from a hex string. Returns null if hex color is invalid */
 export function colorFromHex(hexCode: string): Color | null {
     const regex = new RegExp(/#((?:[0-9]|[a-f]){1,2}){3,4}$/);
 
