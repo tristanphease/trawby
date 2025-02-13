@@ -2,16 +2,18 @@ import type AnimInterpInfo from "./animInterp.ts";
 import type AnimRunner from "./animRunner.ts";
 import AnimTimer from "./animTimer.ts";
 import AnimUtil from "./animUtil.ts";
-import { StateEventEnum } from "./builder.ts";
 import type CanvasManager from "./canvas.ts";
 import type CanvasStateManager from "./state.ts";
 import type StateAnims from "./stateAnims.ts";
+import { StateEventEnum } from "./stateBuilder.ts";
 
 class AnimManager<S> {
     animRunner: AnimRunner;
     canvasManager: CanvasManager;
     canvasStateManager: CanvasStateManager<S>;
     stateAnimations: Map<S, StateAnims<S>>;
+
+    subAnimManagers: Array<AnimManager<unknown>>;
 
     // not passed in
     animTimer: AnimTimer;
@@ -23,11 +25,13 @@ class AnimManager<S> {
         canvasManager: CanvasManager,
         canvasStateManager: CanvasStateManager<S>,
         stateAnimations: Map<S, StateAnims<S>>,
+        subAnimManagers: Array<AnimManager<unknown>>,
     ) {
         this.animRunner = animRunner;
         this.canvasManager = canvasManager;
         this.canvasStateManager = canvasStateManager;
         this.stateAnimations = stateAnimations;
+        this.subAnimManagers = subAnimManagers;
 
         this.animTimer = new AnimTimer();
         this.animUtil = new AnimUtil<S>(this);

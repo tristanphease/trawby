@@ -1,6 +1,8 @@
 // main exports go here
 
-export { AnimStateBuilder, createAnim, StateEventEnum } from "./lib/builder.ts";
+export { AnimBuilderObject } from "./lib/builder.ts";
+
+export { AnimStateBuilder, StateEventEnum } from "./lib/stateBuilder.ts";
 
 export type { default as AnimObject } from "./lib/animObject.ts";
 

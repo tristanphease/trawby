@@ -2,6 +2,7 @@ import AnimInterpInfo from "./animInterp.ts";
 import type AnimManager from "./animManager.ts";
 import type { AnimKeyframe } from "./keyframe.ts";
 
+/** Util class for doing animations */
 export default class AnimUtil<S> {
     private animManager: AnimManager<S>;
 

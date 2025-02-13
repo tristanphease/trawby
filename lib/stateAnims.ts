@@ -1,7 +1,7 @@
 import type AnimObject from "./animObject.ts";
 import type AnimObjectInfo from "./animObjectInfo.ts";
 import type AnimUtil from "./animUtil.ts";
-import type { StateEventEnum } from "./builder.ts";
+import type { StateEventEnum } from "./stateBuilder.ts";
 
 export default class StateAnims<S> {
     state: S;
