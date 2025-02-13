@@ -49,7 +49,7 @@ export class AnimBuilderObject implements AnimBuilder {
     }
 
     /** Creates the states that the builder functions for. */
-    public withState<S>(startState: S) {
+    public withState<S>(startState: S): AnimBuilderWithState<S> {
         return new AnimBuilderObjectWithState<S>(
             startState,
             this.dims,
