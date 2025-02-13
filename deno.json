@@ -1,6 +1,6 @@
 {
-    "name": "@trawby/canvas-demo",
-    "version": "0.0.5",
+    "name": "@trawby/trawby",
+    "version": "0.0.6",
     "exports": "./mod.ts",
     "license": "MIT",
     "compilerOptions": {

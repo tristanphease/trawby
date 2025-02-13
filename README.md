@@ -1,4 +1,4 @@
-WORK IN PROGRESS
+Check jsr for documentation and info: https://jsr.io/@trawby/trawby
 
 basic concept:
 

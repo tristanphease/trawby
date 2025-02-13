@@ -1,83 +1,86 @@
-import type AnimObjectInfo from "./animObjectInfo.ts";
 import AnimManager from "./animManager.ts";
 import AnimRunner from "./animRunner.ts";
 import CanvasManager from "./canvas.ts";
 import CanvasStateManager from "./state.ts";
-import type AnimObject from "./animObject.ts";
-import StateAnims from "./stateAnims.ts";
-import type AnimUtil from "./animUtil.ts";
+import type { AnimStateBuilder } from "./stateBuilder.ts";
 
-export interface AnimBuilder {
-    withState<T>(startState: T): AnimBuilderWithState<T>;
+const DEFAULT_DIMS = {
+    width: 500,
+    height: 300,
+};
+
+type DimsType = {
+    width: number;
+    height: number;
+};
+
+interface AnimBuilderBase {
+    withDimensions(width: number, height: number): this;
 }
 
-export interface AnimBuilderWithState<S> {
-    withDimensions(width: number, height: number): AnimBuilderWithState<S>;
+interface AnimBuilder extends AnimBuilderBase {
+    withState<S>(startState: S): AnimBuilderWithState<S>;
+}
+
+interface AnimBuilderWithState<S> extends AnimBuilderBase {
     addStateAnims(
         stateAnims: AnimStateBuilder<S>,
-    ): AnimBuilderObjectWithState<S>;
-    build(): AnimManager<S>;
-}
+    ): this;
 
-/**
- * Creates a builder for creating the animation.
- *
- * Example:
- * ```ts
- * createAnim("canvasId")
- *     .withState<States>(States.StartState)
- *     ...
- * ```
- *
- * @param canvasId the string id for the canvas
- * @returns animBuilder to be used for building up the anim
- */
-export function createAnim(canvasId: string): AnimBuilder {
-    return new AnimBuilderObject(canvasId);
+    addSubBuilder(subBuilder: AnimBuilderWithState<unknown>): this;
+
+    build(canvasId: string): AnimManager<S>;
 }
 
 /** Object for building the animations */
 export class AnimBuilderObject implements AnimBuilder {
-    canvasManager: CanvasManager;
+    dims: DimsType;
 
-    constructor(canvasId: string) {
-        const canvas = <HTMLCanvasElement> document.getElementById(canvasId);
-        if (!canvas || canvas.tagName !== "CANVAS") {
-            throw new CanvasNotFoundError(canvasId);
-        }
+    constructor() {
+        this.dims = DEFAULT_DIMS;
+    }
 
-        this.canvasManager = new CanvasManager(canvas);
+    withDimensions(width: number, height: number): this {
+        this.dims = {
+            width,
+            height,
+        };
+        return this;
     }
 
     /** Creates the states that the builder functions for. */
     public withState<S>(startState: S) {
         return new AnimBuilderObjectWithState<S>(
-            this.canvasManager,
             startState,
+            this.dims,
         );
     }
 }
 
 /** Object for building the animations with a defined state */
 export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
-    dims: { width: number; height: number };
-    stateManager: CanvasStateManager<S>;
-    canvasManager: CanvasManager;
+    dims: DimsType;
+    startState: S;
     stateAnims: Map<S, AnimStateBuilder<S>>;
+    subBuilders: Array<AnimBuilderWithState<unknown>>;
 
-    constructor(canvasManager: CanvasManager, startState: S) {
-        this.canvasManager = canvasManager;
-        this.stateManager = new CanvasStateManager<S>(startState);
+    constructor(startState: S, dims: DimsType) {
+        this.startState = startState;
+        this.dims = dims;
 
         //defaults
-        this.dims = { width: 500, height: 300 };
         this.stateAnims = new Map();
+        this.subBuilders = [];
+    }
+    addSubBuilder(subBuilder: AnimBuilderWithState<unknown>): this {
+        this.subBuilders.push(subBuilder);
+        return this;
     }
 
     /** Adds the state anims to the animation being built */
     addStateAnims(
         stateAnims: AnimStateBuilder<S>,
-    ): AnimBuilderObjectWithState<S> {
+    ): this {
         this.stateAnims.set(stateAnims.state, stateAnims);
         return this;
     }
@@ -86,113 +89,51 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
     withDimensions(
         width: number,
         height: number,
-    ): AnimBuilderObjectWithState<S> {
+    ): this {
         this.dims = { width, height };
         return this;
     }
 
     /** Builds the animation and creates an AnimManager */
-    build(): AnimManager<S> {
+    build(canvasId: string): AnimManager<S> {
         const animRunner = new AnimRunner();
 
-        this.canvasManager.setDimensions(this.dims.width, this.dims.height);
+        const canvasManager = createCanvasManager(canvasId, this.dims);
+
+        const stateManager = new CanvasStateManager<S>(this.startState);
 
         const stateAnims = new Map();
         for (const [state, animStateBuilder] of this.stateAnims) {
             stateAnims.set(state, animStateBuilder.build());
         }
 
+        const subAnimManagers: Array<AnimManager<unknown>> = [];
+        for (const subBuilder of this.subBuilders) {
+            subAnimManagers.push(subBuilder.build(canvasId));
+        }
+
         const animManager = new AnimManager(
             animRunner,
-            this.canvasManager,
-            this.stateManager,
+            canvasManager,
+            stateManager,
             stateAnims,
+            subAnimManagers,
         );
         return animManager;
     }
 }
 
-/** Builder object for creating an anim */
-export class AnimStateBuilder<S> {
-    anims: Array<AnimObjectInfo<S, AnimObject>>;
-    state: S;
-    events: Map<StateEventEnum, Array<(animUtil: AnimUtil<S>) => void>>;
-
-    constructor(state: S) {
-        this.anims = [];
-        this.state = state;
-        this.events = new Map();
+function createCanvasManager(canvasId: string, dims: DimsType) {
+    const canvas = <HTMLCanvasElement> document.getElementById(canvasId);
+    if (!canvas || canvas.tagName !== "CANVAS") {
+        throw new CanvasNotFoundError(canvasId);
     }
 
-    /** Adds an anim to be run */
-    addAnim(
-        anim: AnimObjectInfo<S, AnimObject>,
-    ): AnimStateBuilder<S> {
-        this.anims.push(anim);
-        return this;
-    }
+    const canvasManager = new CanvasManager(canvas);
 
-    /**
-     * Adds an event to the animState to be run when an event occurs
-     * @param type The state event to trigger the event on
-     * @param callback The function to callback when the event occurs
-     */
-    addEventListener(
-        type: StateEventEnum,
-        callback: (animUtil: AnimUtil<S>) => void,
-    ): void {
-        if (!this.events.has(type)) {
-            this.events.set(type, [callback]);
-        } else {
-            const eventArray = this.events.get(type);
-            eventArray!.push(callback);
-        }
-    }
+    canvasManager.setDimensions(dims.width, dims.height);
 
-    /**
-     * Removes an event from the animState
-     * @param type The state event to remove the event fror
-     * @param callback The function to remove from the animState
-     * @returns Whether the event was removed
-     */
-    removeEventListener(
-        type: StateEventEnum,
-        callback: (animUtil: AnimUtil<S>) => void,
-    ): boolean {
-        const eventArray = this.events.get(type);
-
-        let removed = false;
-
-        if (eventArray) {
-            for (let index = eventArray.length - 1; index >= 0; index--) {
-                if (eventArray[index] == callback) {
-                    eventArray.splice(index, 1);
-                    removed = true;
-                }
-            }
-        }
-
-        return removed;
-    }
-
-    /** Builds the AnimState for use in the AnimBuilder */
-    build(): StateAnims<S> {
-        return new StateAnims<S>(
-            this.state,
-            this.anims,
-            this.events,
-        );
-    }
-}
-
-/** Events for states to run code on them */
-export enum StateEventEnum {
-    /** When a state starts */
-    Start,
-    /** When a state ends */
-    End,
-    /** When a state has all its animations completed */
-    AnimsCompleted,
+    return canvasManager;
 }
 
 /** Error when the canvas with the id provided can't be found */
