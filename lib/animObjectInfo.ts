@@ -13,8 +13,9 @@ class AnimObjectInfo<S, T extends AnimObject> {
         this.completedAnims = 0;
     }
 
-    public withAnim(animFunction: AnimFunction<S, T>) {
+    public withAnim(animFunction: AnimFunction<S, T>): this {
         this.animFunctions.push(animFunction);
+        return this;
     }
 
     public getAnimObject(): AnimObject {

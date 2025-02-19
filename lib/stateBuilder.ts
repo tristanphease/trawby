@@ -1,6 +1,7 @@
 import type AnimObject from "./animObject.ts";
 import type AnimObjectInfo from "./animObjectInfo.ts";
 import type AnimUtil from "./animUtil.ts";
+import { AnimRunBuilderType } from "./builder.ts";
 import StateAnims from "./stateAnims.ts";
 
 /** Builder object for creating an anim */
@@ -10,6 +11,9 @@ export class AnimStateBuilder<S> {
     private anims: Array<AnimObjectInfo<S, any>>;
     state: S;
     events: Map<StateEventEnum, Array<(animUtil: AnimUtil<S>) => void>>;
+
+    animRunBuilderType: AnimRunBuilderType.AnimStateBuilder =
+        AnimRunBuilderType.AnimStateBuilder;
 
     constructor(state: S) {
         this.anims = [];

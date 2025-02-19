@@ -1,7 +1,9 @@
 import AnimManager from "./animManager.ts";
 import AnimRunner from "./animRunner.ts";
+import AnimTimer from "./animTimer.ts";
 import CanvasManager from "./canvas.ts";
 import CanvasStateManager from "./state.ts";
+import type StateAnims from "./stateAnims.ts";
 import type { AnimStateBuilder } from "./stateBuilder.ts";
 
 const DEFAULT_DIMS = {
@@ -14,26 +16,62 @@ type DimsType = {
     height: number;
 };
 
+// ignoring any here since i can't use unknown...
+/** An anim that can be run in a state */
+type AnimRunBuilder =
+    // deno-lint-ignore no-explicit-any
+    | AnimBuilderWithState<any>
+    // deno-lint-ignore no-explicit-any
+    | AnimStateBuilder<any>;
+
+export enum AnimRunBuilderType {
+    AnimBuilderWithState,
+    AnimStateBuilder,
+}
+
+export type AnimRun =
+    | AnimManager<unknown>
+    | StateAnims<unknown>;
+
+export enum AnimRunType {
+    AnimManager,
+    StateAnims,
+}
+
 interface AnimBuilderBase {
+    /** Sets the dimensions for the canvas */
     withDimensions(width: number, height: number): this;
 }
 
-interface AnimBuilder extends AnimBuilderBase {
+export interface AnimBuilder extends AnimBuilderBase {
+    /** Sets the states */
     withState<S>(startState: S): AnimBuilderWithState<S>;
 }
 
-interface AnimBuilderWithState<S> extends AnimBuilderBase {
-    addStateAnims(
-        stateAnims: AnimStateBuilder<S>,
+export interface AnimBuilderWithState<S> extends AnimBuilderBase {
+    addAnimRunToState(
+        state: S,
+        animRun: AnimRunBuilder,
     ): this;
 
-    addSubBuilder(subBuilder: AnimBuilderWithState<unknown>): this;
-
     build(canvasId: string): AnimManager<S>;
+
+    /** Used internally to build up the anim managers */
+    buildSubManager(
+        canvasManager: CanvasManager,
+        animTimer: AnimTimer,
+    ): AnimManager<S>;
+
+    animRunBuilderType: AnimRunBuilderType.AnimBuilderWithState;
+}
+
+/** For creating an animation */
+export function createAnim(): AnimBuilder {
+    return new AnimBuilderObject();
 }
 
 /** Object for building the animations */
-export class AnimBuilderObject implements AnimBuilder {
+class AnimBuilderObject implements AnimBuilder {
     dims: DimsType;
 
     constructor() {
@@ -61,27 +99,30 @@ export class AnimBuilderObject implements AnimBuilder {
 export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
     dims: DimsType;
     startState: S;
-    stateAnims: Map<S, AnimStateBuilder<S>>;
-    subBuilders: Array<AnimBuilderWithState<unknown>>;
+    animRunBuilders: Map<S, AnimRunBuilder>;
+
+    animRunBuilderType: AnimRunBuilderType.AnimBuilderWithState =
+        AnimRunBuilderType.AnimBuilderWithState;
+
+    //TODO
+    stateOrder: Array<S>;
 
     constructor(startState: S, dims: DimsType) {
         this.startState = startState;
         this.dims = dims;
 
         //defaults
-        this.stateAnims = new Map();
-        this.subBuilders = [];
-    }
-    addSubBuilder(subBuilder: AnimBuilderWithState<unknown>): this {
-        this.subBuilders.push(subBuilder);
-        return this;
+        this.animRunBuilders = new Map();
+
+        this.stateOrder = [];
     }
 
-    /** Adds the state anims to the animation being built */
-    addStateAnims(
-        stateAnims: AnimStateBuilder<S>,
+    /** Adds an anim that can be run to the animation being built */
+    addAnimRunToState(
+        state: S,
+        animRun: AnimRunBuilder,
     ): this {
-        this.stateAnims.set(stateAnims.state, stateAnims);
+        this.animRunBuilders.set(state, animRun);
         return this;
     }
 
@@ -96,30 +137,53 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
 
     /** Builds the animation and creates an AnimManager */
     build(canvasId: string): AnimManager<S> {
-        const animRunner = new AnimRunner();
-
         const canvasManager = createCanvasManager(canvasId, this.dims);
+        const animTimer = new AnimTimer();
 
+        return this.buildManager(canvasManager, animTimer);
+    }
+
+    buildSubManager(
+        canvasManager: CanvasManager,
+        animTimer: AnimTimer,
+    ): AnimManager<S> {
+        return this.buildManager(canvasManager, animTimer);
+    }
+
+    private buildManager(
+        canvasManager: CanvasManager,
+        animTimer: AnimTimer,
+    ): AnimManager<S> {
+        const animRunner = new AnimRunner();
         const stateManager = new CanvasStateManager<S>(this.startState);
 
-        const stateAnims = new Map();
-        for (const [state, animStateBuilder] of this.stateAnims) {
-            stateAnims.set(state, animStateBuilder.build());
+        const animRuns: Map<S, AnimRun> = new Map();
+
+        for (const [state, animRun] of this.animRunBuilders) {
+            switch (animRun.animRunBuilderType) {
+                case AnimRunBuilderType.AnimBuilderWithState:
+                    animRuns.set(
+                        state,
+                        animRun
+                            .buildSubManager(
+                                canvasManager,
+                                animTimer,
+                            ),
+                    );
+                    break;
+                case AnimRunBuilderType.AnimStateBuilder:
+                    animRuns.set(state, animRun.build());
+                    break;
+            }
         }
 
-        const subAnimManagers: Array<AnimManager<unknown>> = [];
-        for (const subBuilder of this.subBuilders) {
-            subAnimManagers.push(subBuilder.build(canvasId));
-        }
-
-        const animManager = new AnimManager(
+        return new AnimManager(
             animRunner,
             canvasManager,
             stateManager,
-            stateAnims,
-            subAnimManagers,
+            animRuns,
+            animTimer,
         );
-        return animManager;
     }
 }
 
