@@ -1,41 +1,43 @@
 import type AnimInterpInfo from "./animInterp.ts";
 import type AnimRunner from "./animRunner.ts";
-import AnimTimer from "./animTimer.ts";
+import type AnimTimer from "./animTimer.ts";
 import AnimUtil from "./animUtil.ts";
+import { type AnimRun, AnimRunType } from "./builder.ts";
 import type CanvasManager from "./canvas.ts";
 import type CanvasStateManager from "./state.ts";
-import type StateAnims from "./stateAnims.ts";
 import { StateEventEnum } from "./stateBuilder.ts";
 
-class AnimManager<S> {
+export default class AnimManager<S> {
     animRunner: AnimRunner;
     canvasManager: CanvasManager;
     canvasStateManager: CanvasStateManager<S>;
-    stateAnimations: Map<S, StateAnims<S>>;
+    stateAnimRuns: Map<S, AnimRun>;
+    animTimer: AnimTimer;
 
-    subAnimManagers: Array<AnimManager<unknown>>;
+    animRunType: AnimRunType.AnimManager = AnimRunType.AnimManager;
 
     // not passed in
-    animTimer: AnimTimer;
     animUtil: AnimUtil<S>;
     interpAnimations: Array<AnimInterpInfo>;
+
+    runUpdate: boolean;
 
     constructor(
         animRunner: AnimRunner,
         canvasManager: CanvasManager,
         canvasStateManager: CanvasStateManager<S>,
-        stateAnimations: Map<S, StateAnims<S>>,
-        subAnimManagers: Array<AnimManager<unknown>>,
+        stateAnimRuns: Map<S, AnimRun>,
+        animTimer: AnimTimer,
     ) {
         this.animRunner = animRunner;
         this.canvasManager = canvasManager;
         this.canvasStateManager = canvasStateManager;
-        this.stateAnimations = stateAnimations;
-        this.subAnimManagers = subAnimManagers;
+        this.stateAnimRuns = stateAnimRuns;
+        this.animTimer = animTimer;
 
-        this.animTimer = new AnimTimer();
-        this.animUtil = new AnimUtil<S>(this);
+        this.animUtil = new AnimUtil(this);
         this.interpAnimations = [];
+        this.runUpdate = false;
     }
 
     /** Starts the animation */
@@ -43,44 +45,71 @@ class AnimManager<S> {
         const startState = this.canvasStateManager.currentState;
 
         this.startState(startState);
-
-        globalThis.requestAnimationFrame(this.update.bind(this));
     }
 
-    private startState(newState: S) {
-        const stateAnimations = this.stateAnimations.get(newState);
+    public addInterp(animInterpInfo: AnimInterpInfo) {
+        this.interpAnimations.push(animInterpInfo);
+    }
 
-        if (stateAnimations) {
-            stateAnimations.runEvents(StateEventEnum.Start, this.animUtil);
+    private startState(newState: S): void {
+        const animRunsForState = this.stateAnimRuns.get(newState);
 
-            for (const anim of stateAnimations.anims) {
-                const animObject = anim.getAnimObject();
-                const context = this.canvasManager.getContext();
-                if (animObject.start) {
-                    animObject.start(context);
+        if (animRunsForState) {
+            switch (animRunsForState.animRunType) {
+                case AnimRunType.AnimManager:
+                    this.runUpdate = false;
+                    animRunsForState.start();
+                    break;
+                case AnimRunType.StateAnims: {
+                    animRunsForState.runEvents(
+                        StateEventEnum.Start,
+                        this.animUtil,
+                    );
+
+                    for (const anim of animRunsForState.anims) {
+                        const animObject = anim.getAnimObject();
+                        const context = this.canvasManager.getContext();
+                        if (animObject.start) {
+                            animObject.start(context);
+                        }
+                        this.animRunner.addAnimObject(animObject);
+                        anim.run(this.animUtil);
+                    }
+
+                    this.runUpdate = true;
+                    this.update();
+                    break;
                 }
-                this.animRunner.addAnimObject(animObject);
-                anim.run(this.animUtil);
             }
         }
     }
 
-    private endState(currentState: S) {
+    private endState(currentState: S): void {
         // on end of state, kill all running anims
-        this.animTimer.cancelAnims();
+
         for (const interpAnim of this.interpAnimations) {
             interpAnim.cancelFunction();
         }
         this.interpAnimations = [];
 
-        const stateAnimations = this.stateAnimations.get(currentState);
+        const animRunsForState = this.stateAnimRuns.get(currentState);
 
-        if (stateAnimations) {
-            stateAnimations.runEvents(StateEventEnum.End, this.animUtil);
+        if (animRunsForState) {
+            switch (animRunsForState.animRunType) {
+                case AnimRunType.AnimManager:
+                    // nothing at the moment
+                    break;
+                case AnimRunType.StateAnims:
+                    animRunsForState.runEvents(
+                        StateEventEnum.End,
+                        this.animUtil,
+                    );
+                    this.animTimer.cancelAnims();
+                    break;
+            }
         }
     }
 
-    /** Main update loop */
     private update() {
         const deltaTime = this.animTimer.updateAndGetDeltaTime();
 
@@ -101,13 +130,15 @@ class AnimManager<S> {
         }
         // check for completed anims
         const currentState = this.canvasStateManager.currentState;
-        const animState = this.stateAnimations.get(currentState);
-        if (animState) {
-            if (animState.checkJustCompletedAnims()) {
-                animState.runEvents(
-                    StateEventEnum.AnimsCompleted,
-                    this.animUtil,
-                );
+        const animRuns = this.stateAnimRuns.get(currentState);
+        if (animRuns) {
+            if (animRuns.animRunType === AnimRunType.StateAnims) {
+                if (animRuns.checkJustCompletedAnims()) {
+                    animRuns.runEvents(
+                        StateEventEnum.AnimsCompleted,
+                        this.animUtil,
+                    );
+                }
             }
         }
 
@@ -118,16 +149,14 @@ class AnimManager<S> {
         // draw anim objects
         this.animRunner.draw(context);
 
-        // re-call update
-        globalThis.requestAnimationFrame(this.update.bind(this));
+        if (this.runUpdate) {
+            // re-call update
+            globalThis.requestAnimationFrame(this.update.bind(this));
+        }
     }
 
     public waitTime(timeToWait: number): Promise<void> {
         return this.animTimer.waitTime(timeToWait);
-    }
-
-    public addInterp(animInterpInfo: AnimInterpInfo) {
-        this.interpAnimations.push(animInterpInfo);
     }
 
     public setState(newState: S) {
@@ -142,4 +171,3 @@ class AnimManager<S> {
         this.animRunner.setZoomPoint(zoomAmount, x, y);
     }
 }
-export default AnimManager;

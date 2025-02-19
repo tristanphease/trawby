@@ -1,6 +1,7 @@
 import type AnimObject from "./animObject.ts";
 import type AnimObjectInfo from "./animObjectInfo.ts";
 import type AnimUtil from "./animUtil.ts";
+import { AnimRunType } from "./builder.ts";
 import type { StateEventEnum } from "./stateBuilder.ts";
 
 export default class StateAnims<S> {
@@ -8,6 +9,7 @@ export default class StateAnims<S> {
     anims: Array<AnimObjectInfo<S, AnimObject>>;
     stateEvents: Map<StateEventEnum, Array<(animUtil: AnimUtil<S>) => void>>;
 
+    animRunType: AnimRunType.StateAnims = AnimRunType.StateAnims;
     completed: boolean;
 
     constructor(
