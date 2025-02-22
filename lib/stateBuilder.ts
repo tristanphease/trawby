@@ -3,21 +3,24 @@ import type AnimObjectInfo from "./animObjectInfo.ts";
 import type AnimUtil from "./animUtil.ts";
 import { AnimRunBuilderType } from "./builder.ts";
 import StateAnims from "./stateAnims.ts";
+import { addToMapArray } from "./util/mapUtil.ts";
+
+export function createAnimForState<S>() {
+    return new AnimStateBuilder<S>();
+}
 
 /** Builder object for creating an anim */
 export class AnimStateBuilder<S> {
     // i can't figure out a better way to do this, sometimes i hate typescript...
     // deno-lint-ignore no-explicit-any
     private anims: Array<AnimObjectInfo<S, any>>;
-    state: S;
-    events: Map<StateEventEnum, Array<(animUtil: AnimUtil<S>) => void>>;
+    private events: Map<StateEventEnum, Array<(animUtil: AnimUtil<S>) => void>>;
 
     animRunBuilderType: AnimRunBuilderType.AnimStateBuilder =
         AnimRunBuilderType.AnimStateBuilder;
 
-    constructor(state: S) {
+    constructor() {
         this.anims = [];
-        this.state = state;
         this.events = new Map();
     }
 
@@ -31,19 +34,15 @@ export class AnimStateBuilder<S> {
 
     /**
      * Adds an event to the animState to be run when an event occurs
-     * @param type The state event to trigger the event on
+     * @param event The state event to trigger the event on
      * @param callback The function to callback when the event occurs
      */
     addEventListener(
-        type: StateEventEnum,
+        event: StateEventEnum,
         callback: (animUtil: AnimUtil<S>) => void,
-    ): void {
-        if (!this.events.has(type)) {
-            this.events.set(type, [callback]);
-        } else {
-            const eventArray = this.events.get(type);
-            eventArray!.push(callback);
-        }
+    ): this {
+        addToMapArray(this.events, event, callback);
+        return this;
     }
 
     /**
@@ -55,27 +54,23 @@ export class AnimStateBuilder<S> {
     removeEventListener(
         type: StateEventEnum,
         callback: (animUtil: AnimUtil<S>) => void,
-    ): boolean {
+    ): this {
         const eventArray = this.events.get(type);
-
-        let removed = false;
 
         if (eventArray) {
             for (let index = eventArray.length - 1; index >= 0; index--) {
                 if (eventArray[index] == callback) {
                     eventArray.splice(index, 1);
-                    removed = true;
                 }
             }
         }
 
-        return removed;
+        return this;
     }
 
     /** Builds the AnimState for use in the AnimBuilder */
     build(): StateAnims<S> {
         return new StateAnims<S>(
-            this.state,
             this.anims,
             this.events,
         );

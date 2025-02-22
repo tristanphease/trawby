@@ -6,7 +6,11 @@ export type {
     AnimBuilderWithState,
 } from "./lib/builder.ts";
 
-export { AnimStateBuilder, StateEventEnum } from "./lib/stateBuilder.ts";
+export {
+    AnimStateBuilder,
+    createAnimForState,
+    StateEventEnum,
+} from "./lib/stateBuilder.ts";
 
 export type { AnimFunction } from "./lib/animFunction.ts";
 
@@ -22,4 +26,8 @@ export { createKeyframes } from "./lib/keyframe.ts";
 
 export { default as PixelGrid } from "./lib/objects/pixelGrid.ts";
 
-export { colorFromHex, default as Color } from "./lib/util/color.ts";
+export {
+    colorFromHex,
+    default as Color,
+    getRandomColor,
+} from "./lib/util/color.ts";

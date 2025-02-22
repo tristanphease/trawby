@@ -1,3 +1,5 @@
+import { getRandomInt } from "./random.ts";
+
 /** A utility color class for usage in this library */
 export default class Color {
     red: number;
@@ -17,6 +19,9 @@ export default class Color {
         const blue = hexStringFromNumber(this.blue);
         return `#${red}${green}${blue}`;
     }
+
+    static BLACK: Color = new Color(0, 0, 0);
+    static WHITE: Color = new Color(255, 255, 255);
 }
 
 function hexStringFromNumber(colorValue: number) {
@@ -25,6 +30,13 @@ function hexStringFromNumber(colorValue: number) {
         colorString = `0${colorString}`;
     }
     return colorString;
+}
+
+export function getRandomColor(): Color {
+    const red = getRandomInt(0, 256);
+    const green = getRandomInt(0, 256);
+    const blue = getRandomInt(0, 256);
+    return new Color(red, green, blue);
 }
 
 /** Creates a color from a hex string. Returns null if hex color is invalid */

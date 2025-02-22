@@ -34,7 +34,7 @@ export default class PixelGrid implements AnimObject {
         if (options) {
             this.defaultColor = options.defaultColor;
         } else {
-            this.defaultColor = null;
+            this.defaultColor = Color.WHITE;
         }
     }
 
@@ -70,6 +70,15 @@ export default class PixelGrid implements AnimObject {
         this.imageData!.data[index + 1] = color.green;
         this.imageData!.data[index + 2] = color.blue;
         this.imageData!.data[index + 3] = 255;
+    }
+
+    /** Clears the pixel grid, sets it all to one color */
+    public clearAll(color: Color) {
+        for (let x = 0; x < this.width; x++) {
+            for (let y = 0; y < this.height; y++) {
+                this.setPixel(x, y, color);
+            }
+        }
     }
 
     /** Draws the pixel grid on the canvas */
