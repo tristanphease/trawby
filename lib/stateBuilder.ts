@@ -5,7 +5,7 @@ import { AnimRunBuilderType } from "./builder.ts";
 import StateAnims from "./stateAnims.ts";
 import { addToMapArray } from "./util/mapUtil.ts";
 
-export function createAnimForState<S>() {
+export function createAnimForState<S>(): AnimStateBuilder<S> {
     return new AnimStateBuilder<S>();
 }
 
