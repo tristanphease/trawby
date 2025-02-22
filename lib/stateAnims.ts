@@ -5,7 +5,6 @@ import { AnimRunType } from "./builder.ts";
 import type { StateEventEnum } from "./stateBuilder.ts";
 
 export default class StateAnims<S> {
-    state: S;
     anims: Array<AnimObjectInfo<S, AnimObject>>;
     stateEvents: Map<StateEventEnum, Array<(animUtil: AnimUtil<S>) => void>>;
 
@@ -13,14 +12,12 @@ export default class StateAnims<S> {
     completed: boolean;
 
     constructor(
-        state: S,
         anims: Array<AnimObjectInfo<S, AnimObject>>,
         stateEvents: Map<
             StateEventEnum,
             Array<(animUtil: AnimUtil<S>) => void>
         >,
     ) {
-        this.state = state;
         this.anims = anims;
         this.stateEvents = stateEvents;
         this.completed = false;

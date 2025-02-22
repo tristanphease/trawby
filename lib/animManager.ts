@@ -2,9 +2,14 @@ import type AnimInterpInfo from "./animInterp.ts";
 import type AnimRunner from "./animRunner.ts";
 import type AnimTimer from "./animTimer.ts";
 import AnimUtil from "./animUtil.ts";
-import { type AnimRun, AnimRunType } from "./builder.ts";
+import {
+    type AnimManagerEventEnum,
+    type AnimRun,
+    AnimRunType,
+} from "./builder.ts";
 import type CanvasManager from "./canvas.ts";
 import type CanvasStateManager from "./state.ts";
+import type StateAnims from "./stateAnims.ts";
 import { StateEventEnum } from "./stateBuilder.ts";
 
 export default class AnimManager<S> {
@@ -13,6 +18,10 @@ export default class AnimManager<S> {
     canvasStateManager: CanvasStateManager<S>;
     stateAnimRuns: Map<S, AnimRun>;
     animTimer: AnimTimer;
+    events: Map<
+        AnimManagerEventEnum,
+        Array<(animUtil: AnimUtil<unknown>) => void>
+    >;
 
     animRunType: AnimRunType.AnimManager = AnimRunType.AnimManager;
 
@@ -28,12 +37,17 @@ export default class AnimManager<S> {
         canvasStateManager: CanvasStateManager<S>,
         stateAnimRuns: Map<S, AnimRun>,
         animTimer: AnimTimer,
+        events: Map<
+            AnimManagerEventEnum,
+            Array<(animUtil: AnimUtil<unknown>) => void>
+        >,
     ) {
         this.animRunner = animRunner;
         this.canvasManager = canvasManager;
         this.canvasStateManager = canvasStateManager;
         this.stateAnimRuns = stateAnimRuns;
         this.animTimer = animTimer;
+        this.events = events;
 
         this.animUtil = new AnimUtil(this);
         this.interpAnimations = [];
@@ -61,12 +75,14 @@ export default class AnimManager<S> {
                     animRunsForState.start();
                     break;
                 case AnimRunType.StateAnims: {
-                    animRunsForState.runEvents(
+                    (<StateAnims<S>> animRunsForState).runEvents(
                         StateEventEnum.Start,
                         this.animUtil,
                     );
 
-                    for (const anim of animRunsForState.anims) {
+                    for (
+                        const anim of (<StateAnims<S>> animRunsForState).anims
+                    ) {
                         const animObject = anim.getAnimObject();
                         const context = this.canvasManager.getContext();
                         if (animObject.start) {
@@ -100,13 +116,20 @@ export default class AnimManager<S> {
                     // nothing at the moment
                     break;
                 case AnimRunType.StateAnims:
-                    animRunsForState.runEvents(
+                    (<StateAnims<S>> animRunsForState).runEvents(
                         StateEventEnum.End,
                         this.animUtil,
                     );
                     this.animTimer.cancelAnims();
                     break;
             }
+        }
+    }
+
+    public runEvents<PS>(event: AnimManagerEventEnum, animUtil: AnimUtil<PS>) {
+        const events = this.events.get(event) || [];
+        for (const func of events) {
+            func(animUtil);
         }
     }
 
@@ -134,7 +157,7 @@ export default class AnimManager<S> {
         if (animRuns) {
             if (animRuns.animRunType === AnimRunType.StateAnims) {
                 if (animRuns.checkJustCompletedAnims()) {
-                    animRuns.runEvents(
+                    (<StateAnims<S>> animRuns).runEvents(
                         StateEventEnum.AnimsCompleted,
                         this.animUtil,
                     );

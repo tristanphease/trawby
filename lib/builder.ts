@@ -1,10 +1,13 @@
+import { StateEventEnum } from "../mod.ts";
 import AnimManager from "./animManager.ts";
 import AnimRunner from "./animRunner.ts";
 import AnimTimer from "./animTimer.ts";
+import type AnimUtil from "./animUtil.ts";
 import CanvasManager from "./canvas.ts";
 import CanvasStateManager from "./state.ts";
 import type StateAnims from "./stateAnims.ts";
 import type { AnimStateBuilder } from "./stateBuilder.ts";
+import { addToMapArray } from "./util/mapUtil.ts";
 
 const DEFAULT_DIMS = {
     width: 500,
@@ -62,7 +65,22 @@ export interface AnimBuilderWithState<S> extends AnimBuilderBase {
         animTimer: AnimTimer,
     ): AnimManager<S>;
 
+    setStateOrder(
+        states: Array<S>,
+    ): this;
+
+    addEventListener(
+        event: AnimManagerEventEnum,
+        callback: (animUtil: AnimUtil<S>) => void,
+    ): this;
+
     animRunBuilderType: AnimRunBuilderType.AnimBuilderWithState;
+}
+
+/** Events for states to run code on them */
+export enum AnimManagerEventEnum {
+    /** When the manager finishes with the states it has to run through */
+    ManagerEnd,
 }
 
 /** For creating an animation */
@@ -104,8 +122,15 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
     animRunBuilderType: AnimRunBuilderType.AnimBuilderWithState =
         AnimRunBuilderType.AnimBuilderWithState;
 
-    //TODO
+    // state order stuff
+    explicitStateOrder: boolean;
     stateOrder: Array<S>;
+
+    // events to be run
+    events: Map<
+        AnimManagerEventEnum,
+        Array<(animUtil: AnimUtil<unknown>) => void>
+    >;
 
     constructor(startState: S, dims: DimsType) {
         this.startState = startState;
@@ -114,15 +139,27 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
         //defaults
         this.animRunBuilders = new Map();
 
+        this.explicitStateOrder = false;
         this.stateOrder = [];
+
+        this.events = new Map();
     }
 
-    /** Adds an anim that can be run to the animation being built */
+    /**
+     * Adds an anim that can be run to the animation being built.
+     * If state is not set explicitly then
+     */
     addAnimRunToState(
         state: S,
         animRun: AnimRunBuilder,
     ): this {
         this.animRunBuilders.set(state, animRun);
+
+        if (!this.explicitStateOrder) {
+            // set state order implicitly based on order they're added
+            // todo remove any existing values for state in array
+            this.stateOrder.push(state);
+        }
         return this;
     }
 
@@ -132,6 +169,22 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
         height: number,
     ): this {
         this.dims = { width, height };
+        return this;
+    }
+
+    setStateOrder(
+        states: Array<S>,
+    ): this {
+        this.stateOrder = states;
+        this.explicitStateOrder = true;
+        return this;
+    }
+
+    addEventListener<PS>(
+        event: AnimManagerEventEnum,
+        callback: (animUtil: AnimUtil<PS>) => void,
+    ): this {
+        addToMapArray(this.events, event, callback);
         return this;
     }
 
@@ -161,7 +214,19 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
 
         for (const [state, animRun] of this.animRunBuilders) {
             switch (animRun.animRunBuilderType) {
-                case AnimRunBuilderType.AnimBuilderWithState:
+                case AnimRunBuilderType.AnimBuilderWithState: {
+                    const index = this.stateOrder.indexOf(state);
+                    // if index isn't last one in array
+                    if (index < this.stateOrder.length - 1) {
+                        const nextState = this.stateOrder[index + 1];
+                        animRun.addEventListener(
+                            AnimManagerEventEnum.ManagerEnd,
+                            (animUtil) => {
+                                animUtil.setState(nextState);
+                            },
+                        );
+                    }
+
                     animRuns.set(
                         state,
                         animRun
@@ -171,9 +236,22 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
                             ),
                     );
                     break;
-                case AnimRunBuilderType.AnimStateBuilder:
+                }
+                case AnimRunBuilderType.AnimStateBuilder: {
+                    const index = this.stateOrder.indexOf(state);
+                    // if index isn't last one in array
+                    if (index < this.stateOrder.length - 1) {
+                        const nextState = this.stateOrder[index + 1];
+                        animRun.addEventListener(
+                            StateEventEnum.AnimsCompleted,
+                            (animUtil) => {
+                                animUtil.setState(nextState);
+                            },
+                        );
+                    }
                     animRuns.set(state, animRun.build());
                     break;
+                }
             }
         }
 
@@ -183,6 +261,7 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
             stateManager,
             animRuns,
             animTimer,
+            this.events,
         );
     }
 }
