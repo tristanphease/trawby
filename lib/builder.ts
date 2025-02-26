@@ -51,6 +51,7 @@ export interface AnimBuilder extends AnimBuilderBase {
     withState<S>(startState: S): AnimBuilderWithState<S>;
 }
 
+/** Interface for an anim builder */
 export interface AnimBuilderWithState<S> extends AnimBuilderBase {
     addAnimRunToState(
         state: S,
@@ -246,6 +247,15 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
                             StateEventEnum.AnimsCompleted,
                             (animUtil) => {
                                 animUtil.setState(nextState);
+                            },
+                        );
+                    } else {
+                        // final one in array
+                        animRun.addEventListener(
+                            StateEventEnum.AnimsCompleted,
+                            (animUtil) => {
+                                // want to run manager end at this point
+                                animUtil.endManager();
                             },
                         );
                     }

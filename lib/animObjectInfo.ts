@@ -2,13 +2,13 @@ import type { AnimFunction } from "./animFunction.ts";
 import type AnimObject from "./animObject.ts";
 import type AnimUtil from "./animUtil.ts";
 
-class AnimObjectInfo<S, T extends AnimObject> {
-    private animObject: T;
+class AnimObjectInfo<S, T extends Array<AnimObject>> {
+    private animObjects: T;
     private animFunctions: Array<AnimFunction<S, T>>;
     private completedAnims: number;
 
-    constructor(animObject: T) {
-        this.animObject = animObject;
+    constructor(...animObjects: T) {
+        this.animObjects = animObjects;
         this.animFunctions = [];
         this.completedAnims = 0;
     }
@@ -18,13 +18,13 @@ class AnimObjectInfo<S, T extends AnimObject> {
         return this;
     }
 
-    public getAnimObject(): AnimObject {
-        return this.animObject;
+    public getAnimObjects(): T {
+        return this.animObjects;
     }
 
     public run(animUtil: AnimUtil<S>) {
         for (const animFunction of this.animFunctions) {
-            animFunction(this.animObject, animUtil)
+            animFunction(animUtil, ...this.animObjects)
                 .then(() => this.completedAnims += 1)
                 .catch((error) => {
                     if (error.isCancelled) {

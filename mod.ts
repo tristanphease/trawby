@@ -16,7 +16,7 @@ export type { AnimFunction } from "./lib/animFunction.ts";
 
 export { default as AnimManager } from "./lib/animManager.ts";
 
-export type { default as AnimObject } from "./lib/animObject.ts";
+export type { AnimObjects, default as AnimObject } from "./lib/animObject.ts";
 
 export { default as AnimUtil } from "./lib/animUtil.ts";
 

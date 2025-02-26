@@ -1,12 +1,17 @@
 import type AnimObject from "../animObject.ts";
 import Color from "../util/color.ts";
 
+/** Options for a pixel grid */
 type PixelGridOptions = {
-    defaultColor: Color;
+    /** The default color to set the pixel grid to at the start */
+    defaultColor?: Color;
+    /** Whether canvas should use antialiasing */
+    smooth?: boolean;
 };
 
 /**
  * Optimised pixel grid, uses [ImageData](https://developer.mozilla.org/en-US/docs/Web/API/ImageData) underneath.
+ * Note that this doesn't follow the canvas transformation matrix so have to use zoomFactor instead
  */
 export default class PixelGrid implements AnimObject {
     private imageData: ImageData | null;
@@ -16,6 +21,9 @@ export default class PixelGrid implements AnimObject {
     width: number;
     height: number;
 
+    // we use an internal canvas so that canvas transformation changes apply
+    private internalCanvas: OffscreenCanvas;
+    smooth: boolean;
     defaultColor: Color | null;
 
     constructor(
@@ -31,11 +39,9 @@ export default class PixelGrid implements AnimObject {
         this.height = height;
 
         this.imageData = null;
-        if (options) {
-            this.defaultColor = options.defaultColor;
-        } else {
-            this.defaultColor = Color.WHITE;
-        }
+        this.defaultColor = options?.defaultColor ?? Color.WHITE;
+        this.smooth = options?.smooth ?? false;
+        this.internalCanvas = new OffscreenCanvas(width, height);
     }
 
     /** Start the pixel grid, used internally */
@@ -83,6 +89,9 @@ export default class PixelGrid implements AnimObject {
 
     /** Draws the pixel grid on the canvas */
     draw(ctx: CanvasRenderingContext2D): void {
-        ctx.putImageData(this.imageData!, this.x, this.y);
+        const internalCtx = this.internalCanvas.getContext("2d")!;
+        internalCtx.putImageData(this.imageData!, 0, 0);
+        ctx.imageSmoothingEnabled = this.smooth;
+        ctx.drawImage(this.internalCanvas, this.x, this.y);
     }
 }

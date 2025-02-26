@@ -60,6 +60,13 @@ export default class AnimUtil<S> {
     public setState(newState: S) {
         this.animManager.setState(newState);
     }
+
+    /**
+     * Ends the current state and manager
+     */
+    public endManager() {
+        this.animManager.endManager();
+    }
 }
 
 export class AnimCancelled {

@@ -7,6 +7,7 @@ class AnimInterpInfo {
 
     completeFunction: () => void;
     cancelFunction: () => void;
+    /** Time through the anim is, between 0 and 1 */
     timeThrough: number;
 
     constructor(
@@ -26,7 +27,7 @@ class AnimInterpInfo {
     }
 
     public isCompleted(): boolean {
-        return this.timeThrough >= this.totalTime;
+        return this.timeThrough >= 1;
     }
 
     public update(deltaTime: number) {
