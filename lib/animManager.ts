@@ -2,11 +2,7 @@ import type AnimInterpInfo from "./animInterp.ts";
 import type AnimRunner from "./animRunner.ts";
 import type AnimTimer from "./animTimer.ts";
 import AnimUtil from "./animUtil.ts";
-import {
-    type AnimManagerEventEnum,
-    type AnimRun,
-    AnimRunType,
-} from "./builder.ts";
+import { AnimManagerEventEnum, type AnimRun, AnimRunType } from "./builder.ts";
 import type CanvasManager from "./canvas.ts";
 import type CanvasStateManager from "./state.ts";
 import type StateAnims from "./stateAnims.ts";
@@ -83,12 +79,17 @@ export default class AnimManager<S> {
                     for (
                         const anim of (<StateAnims<S>> animRunsForState).anims
                     ) {
-                        const animObject = anim.getAnimObject();
+                        const animObjects = anim.getAnimObjects();
                         const context = this.canvasManager.getContext();
-                        if (animObject.start) {
-                            animObject.start(context);
+                        for (const animObject of animObjects) {
+                            const objectAdded = this.animRunner.addAnimObject(
+                                animObject,
+                                newState,
+                            );
+                            if (animObject.start && objectAdded) {
+                                animObject.start(context);
+                            }
                         }
-                        this.animRunner.addAnimObject(animObject);
                         anim.run(this.animUtil);
                     }
 
@@ -107,6 +108,9 @@ export default class AnimManager<S> {
             interpAnim.cancelFunction();
         }
         this.interpAnimations = [];
+
+        // remove objects that exist for state
+        this.animRunner.removeAnimObjectsByState(currentState);
 
         const animRunsForState = this.stateAnimRuns.get(currentState);
 
@@ -188,6 +192,12 @@ export default class AnimManager<S> {
             this.startState(newState);
             this.canvasStateManager.setState(newState);
         }
+    }
+
+    public endManager() {
+        const currentState = this.canvasStateManager.currentState;
+        this.endState(currentState);
+        this.runEvents(AnimManagerEventEnum.ManagerEnd, this.animUtil);
     }
 
     public setZoomPoint(zoomAmount: number, x: number, y: number) {

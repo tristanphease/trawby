@@ -1,21 +1,42 @@
 import type AnimObject from "./animObject.ts";
+import { addToMapArray } from "./util/mapUtil.ts";
 
 /** An object that runs the anims on the objects */
 export default class AnimRunner {
-    private animObjects: Array<AnimObject>;
+    private animObjects: Set<AnimObject>;
+    private animObjectsByState: Map<unknown, Array<AnimObject>>;
 
     private zoomPoint: { x: number; y: number } | null;
     private zoomAmount: number;
 
     constructor() {
-        this.animObjects = [];
+        this.animObjects = new Set();
+        this.animObjectsByState = new Map();
 
         this.zoomPoint = null;
         this.zoomAmount = 1;
     }
 
-    addAnimObject(animObject: AnimObject) {
-        this.animObjects.push(animObject);
+    /** Add anim object to runner, returns whether was added or already exists */
+    addAnimObject<S>(animObject: AnimObject, stateAdded: S): boolean {
+        if (!this.animObjects.has(animObject)) {
+            this.animObjects.add(animObject);
+            addToMapArray(this.animObjectsByState, stateAdded, animObject);
+            return true;
+        }
+        return false;
+    }
+
+    removeAnimObjectsByState<S>(state: S) {
+        const animObjects = this.animObjectsByState.get(state);
+
+        if (animObjects) {
+            for (const animObject of animObjects) {
+                this.animObjects.delete(animObject);
+            }
+
+            this.animObjectsByState.delete(state);
+        }
     }
 
     /** Main draw loop for anim objects */

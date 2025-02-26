@@ -5,3 +5,5 @@ export default interface AnimObject {
     /** Draw the anim object using the canvas context */
     draw(ctx: CanvasRenderingContext2D): void;
 }
+
+export interface AnimObjects extends Array<AnimObject> {}
