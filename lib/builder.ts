@@ -3,17 +3,19 @@ import AnimManager from "./animManager.ts";
 import AnimRunner from "./animRunner.ts";
 import AnimTimer from "./animTimer.ts";
 import type AnimUtil from "./animUtil.ts";
-import CanvasManager from "./canvas.ts";
+import CanvasManager from "./canvasManager.ts";
 import CanvasStateManager from "./state.ts";
 import type StateAnims from "./stateAnims.ts";
 import type { AnimStateBuilder } from "./stateBuilder.ts";
 import { addToMapArray } from "./util/mapUtil.ts";
 
+/** Default values for the dimensions */
 const DEFAULT_DIMS = {
     width: 500,
     height: 300,
 };
 
+/** The dimensions of the canvas */
 type DimsType = {
     width: number;
     height: number;
@@ -27,25 +29,30 @@ type AnimRunBuilder =
     // deno-lint-ignore no-explicit-any
     | AnimStateBuilder<any>;
 
+/** Types of anim runs during building */
 export enum AnimRunBuilderType {
     AnimBuilderWithState,
     AnimStateBuilder,
 }
 
+/** Anim to be run is either a sub manager or a set of anims for the state */
 export type AnimRun =
     | AnimManager<unknown>
     | StateAnims<unknown>;
 
+/** Types of anim runs */
 export enum AnimRunType {
     AnimManager,
     StateAnims,
 }
 
+/** The base of the anim builder */
 interface AnimBuilderBase {
     /** Sets the dimensions for the canvas */
     withDimensions(width: number, height: number): this;
 }
 
+/** The anim builder */
 export interface AnimBuilder extends AnimBuilderBase {
     /** Sets the states */
     withState<S>(startState: S): AnimBuilderWithState<S>;
@@ -53,28 +60,34 @@ export interface AnimBuilder extends AnimBuilderBase {
 
 /** Interface for an anim builder */
 export interface AnimBuilderWithState<S> extends AnimBuilderBase {
+    /** Add an anim to be run during the state passed in */
     addAnimRunToState(
         state: S,
         animRun: AnimRunBuilder,
     ): this;
 
+    /** Build the anim using the id of the canvas */
     build(canvasId: string): AnimManager<S>;
 
     /** Used internally to build up the anim managers */
     buildSubManager(
         canvasManager: CanvasManager,
         animTimer: AnimTimer,
+        depth: number,
     ): AnimManager<S>;
 
+    /** Explicitly set the order of the states to be run, otherwise will use implicit order */
     setStateOrder(
         states: Array<S>,
     ): this;
 
+    /** Add an event to be run when an event occurs with the callback passed in */
     addEventListener(
         event: AnimManagerEventEnum,
         callback: (animUtil: AnimUtil<S>) => void,
     ): this;
 
+    /** For internal usage to determine the type of anim run */
     animRunBuilderType: AnimRunBuilderType.AnimBuilderWithState;
 }
 
@@ -133,6 +146,10 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
         Array<(animUtil: AnimUtil<unknown>) => void>
     >;
 
+    /**
+     * @param startState The state to begin the animation on
+     * @param dims The dimensions of the canvas
+     */
     constructor(startState: S, dims: DimsType) {
         this.startState = startState;
         this.dims = dims;
@@ -173,6 +190,7 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
         return this;
     }
 
+    /** Explicitly set the order of the states, overriding the default order */
     setStateOrder(
         states: Array<S>,
     ): this {
@@ -181,6 +199,7 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
         return this;
     }
 
+    /** Add event to builder */
     addEventListener<PS>(
         event: AnimManagerEventEnum,
         callback: (animUtil: AnimUtil<PS>) => void,
@@ -194,19 +213,23 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
         const canvasManager = createCanvasManager(canvasId, this.dims);
         const animTimer = new AnimTimer();
 
-        return this.buildManager(canvasManager, animTimer);
+        return this.buildManager(canvasManager, animTimer, 0);
     }
 
+    /** Builds a sub manager, used internally */
     buildSubManager(
         canvasManager: CanvasManager,
         animTimer: AnimTimer,
+        depth: number,
     ): AnimManager<S> {
-        return this.buildManager(canvasManager, animTimer);
+        return this.buildManager(canvasManager, animTimer, depth);
     }
 
+    /** Build up the manager */
     private buildManager(
         canvasManager: CanvasManager,
         animTimer: AnimTimer,
+        depth: number,
     ): AnimManager<S> {
         const animRunner = new AnimRunner();
         const stateManager = new CanvasStateManager<S>(this.startState);
@@ -234,6 +257,7 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
                             .buildSubManager(
                                 canvasManager,
                                 animTimer,
+                                depth + 1,
                             ),
                     );
                     break;
@@ -272,10 +296,12 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
             animRuns,
             animTimer,
             this.events,
+            depth,
         );
     }
 }
 
+/** Create the canvas manager from the canvas and dimensions */
 function createCanvasManager(canvasId: string, dims: DimsType) {
     const canvas = <HTMLCanvasElement> document.getElementById(canvasId);
     if (!canvas || canvas.tagName !== "CANVAS") {

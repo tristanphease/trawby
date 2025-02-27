@@ -1,4 +1,23 @@
-// main exports go here
+/**
+ * Trawby, a neat little animation library for building cool animations on the canvas with javascript
+ * Find info on the [jsr page](https://jsr.io/@trawby/trawby)
+ *
+ * ```ts
+ * import { createAnim } from "@trawby/trawby";
+ *
+ * const animManager = createAnim()
+ *      .withState("state1")
+ *      .withDimensions(1000, 800)
+ *      .addAnimRunToState("state1", getAnimRun())
+ *      .build("canvasId");
+ *
+ * animManager.start();
+ *
+ * ```
+ *
+ * @module
+ */
+
 export { createAnim } from "./lib/builder.ts";
 
 export type {

@@ -2,6 +2,7 @@
 export default class CanvasStateManager<S> {
     currentState: S;
 
+    /** Create a new state manager */
     constructor(startState: S) {
         this.currentState = startState;
     }

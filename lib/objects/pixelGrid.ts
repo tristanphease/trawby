@@ -11,7 +11,6 @@ type PixelGridOptions = {
 
 /**
  * Optimised pixel grid, uses [ImageData](https://developer.mozilla.org/en-US/docs/Web/API/ImageData) underneath.
- * Note that this doesn't follow the canvas transformation matrix so have to use zoomFactor instead
  */
 export default class PixelGrid implements AnimObject {
     private imageData: ImageData | null;
@@ -26,6 +25,7 @@ export default class PixelGrid implements AnimObject {
     smooth: boolean;
     defaultColor: Color | null;
 
+    /** Create a new pixel grid */
     constructor(
         x: number,
         y: number,
@@ -46,11 +46,13 @@ export default class PixelGrid implements AnimObject {
 
     /** Start the pixel grid, used internally */
     start(context: CanvasRenderingContext2D) {
-        this.imageData = context.createImageData(this.width, this.height);
-        if (this.defaultColor !== null) {
-            for (let x = 0; x < this.width; x++) {
-                for (let y = 0; y < this.height; y++) {
-                    this.setPixel(x, y, this.defaultColor);
+        if (this.imageData === null) {
+            this.imageData = context.createImageData(this.width, this.height);
+            if (this.defaultColor !== null) {
+                for (let x = 0; x < this.width; x++) {
+                    for (let y = 0; y < this.height; y++) {
+                        this.setPixel(x, y, this.defaultColor);
+                    }
                 }
             }
         }

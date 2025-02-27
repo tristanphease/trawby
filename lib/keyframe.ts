@@ -1,7 +1,9 @@
+/** Interface for a keyframe used in an interp animation */
 export interface AnimKeyframe {
     // value between 0 and 1 indicating the amount through the keyframe is
     distanceThrough: number;
 
+    /** The value for the number at this keyframe */
     value: number;
 }
 

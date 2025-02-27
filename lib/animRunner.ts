@@ -1,41 +1,61 @@
 import type AnimObject from "./animObject.ts";
-import { addToMapArray } from "./util/mapUtil.ts";
+import { addToMapArray, getMapOfMap } from "./util/mapUtil.ts";
 
 /** An object that runs the anims on the objects */
 export default class AnimRunner {
     private animObjects: Set<AnimObject>;
-    private animObjectsByState: Map<unknown, Array<AnimObject>>;
+    // map by depth first, then by state
+    private animObjectsByStateAndDepth: Map<
+        number,
+        Map<unknown, Array<AnimObject>>
+    >;
 
     private zoomPoint: { x: number; y: number } | null;
     private zoomAmount: number;
 
     constructor() {
         this.animObjects = new Set();
-        this.animObjectsByState = new Map();
+        this.animObjectsByStateAndDepth = new Map();
 
         this.zoomPoint = null;
         this.zoomAmount = 1;
     }
 
     /** Add anim object to runner, returns whether was added or already exists */
-    addAnimObject<S>(animObject: AnimObject, stateAdded: S): boolean {
+    addAnimObject<S>(
+        animObject: AnimObject,
+        stateAdded: S,
+        depth: number,
+    ): boolean {
         if (!this.animObjects.has(animObject)) {
             this.animObjects.add(animObject);
-            addToMapArray(this.animObjectsByState, stateAdded, animObject);
+            const animObjectsByState = getMapOfMap(
+                this.animObjectsByStateAndDepth,
+                depth,
+            );
+            addToMapArray(
+                animObjectsByState,
+                stateAdded,
+                animObject,
+            );
             return true;
         }
         return false;
     }
 
-    removeAnimObjectsByState<S>(state: S) {
-        const animObjects = this.animObjectsByState.get(state);
+    removeAnimObjectsByState<S>(state: S, depth: number) {
+        const animObjectsByState = getMapOfMap(
+            this.animObjectsByStateAndDepth,
+            depth,
+        );
+        const animObjects = animObjectsByState.get(state);
 
         if (animObjects) {
             for (const animObject of animObjects) {
                 this.animObjects.delete(animObject);
             }
 
-            this.animObjectsByState.delete(state);
+            animObjectsByState.delete(state);
         }
     }
 
