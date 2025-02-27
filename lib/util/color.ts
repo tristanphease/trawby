@@ -6,6 +6,7 @@ export default class Color {
     green: number;
     blue: number;
 
+    /** Create a new color from red, green and blue components, between 0 and 255 */
     constructor(r: number, g: number, b: number) {
         this.red = r;
         this.green = g;
@@ -32,6 +33,7 @@ function hexStringFromNumber(colorValue: number) {
     return colorString;
 }
 
+/** Get a random color */
 export function getRandomColor(): Color {
     const red = getRandomInt(0, 256);
     const green = getRandomInt(0, 256);

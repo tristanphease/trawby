@@ -3,7 +3,7 @@ import type AnimRunner from "./animRunner.ts";
 import type AnimTimer from "./animTimer.ts";
 import AnimUtil from "./animUtil.ts";
 import { AnimManagerEventEnum, type AnimRun, AnimRunType } from "./builder.ts";
-import type CanvasManager from "./canvas.ts";
+import type CanvasManager from "./canvasManager.ts";
 import type CanvasStateManager from "./state.ts";
 import type StateAnims from "./stateAnims.ts";
 import { StateEventEnum } from "./stateBuilder.ts";
@@ -18,6 +18,7 @@ export default class AnimManager<S> {
         AnimManagerEventEnum,
         Array<(animUtil: AnimUtil<unknown>) => void>
     >;
+    depth: number;
 
     animRunType: AnimRunType.AnimManager = AnimRunType.AnimManager;
 
@@ -37,6 +38,7 @@ export default class AnimManager<S> {
             AnimManagerEventEnum,
             Array<(animUtil: AnimUtil<unknown>) => void>
         >,
+        depth: number,
     ) {
         this.animRunner = animRunner;
         this.canvasManager = canvasManager;
@@ -44,6 +46,7 @@ export default class AnimManager<S> {
         this.stateAnimRuns = stateAnimRuns;
         this.animTimer = animTimer;
         this.events = events;
+        this.depth = depth;
 
         this.animUtil = new AnimUtil(this);
         this.interpAnimations = [];
@@ -85,6 +88,7 @@ export default class AnimManager<S> {
                             const objectAdded = this.animRunner.addAnimObject(
                                 animObject,
                                 newState,
+                                this.depth,
                             );
                             if (animObject.start && objectAdded) {
                                 animObject.start(context);
@@ -110,7 +114,7 @@ export default class AnimManager<S> {
         this.interpAnimations = [];
 
         // remove objects that exist for state
-        this.animRunner.removeAnimObjectsByState(currentState);
+        this.animRunner.removeAnimObjectsByState(currentState, this.depth);
 
         const animRunsForState = this.stateAnimRuns.get(currentState);
 

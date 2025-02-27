@@ -1,6 +1,7 @@
 import type { AnimKeyframe } from "./keyframe.ts";
 
-class AnimInterpInfo {
+/** Info about an anim interp */
+export default class AnimInterpInfo {
     keyFrames: Array<AnimKeyframe>;
     totalTime: number;
     callbackFunction: (value: number) => void;
@@ -26,10 +27,12 @@ class AnimInterpInfo {
         this.timeThrough = 0;
     }
 
+    /** Whether the interp anim is completed */
     public isCompleted(): boolean {
         return this.timeThrough >= 1;
     }
 
+    /** Update the interp with new values */
     public update(deltaTime: number) {
         this.timeThrough += deltaTime / this.totalTime;
 
@@ -77,5 +80,3 @@ class AnimInterpInfo {
         return value;
     }
 }
-
-export default AnimInterpInfo;

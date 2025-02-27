@@ -69,6 +69,7 @@ export default class AnimUtil<S> {
     }
 }
 
+/** Object to be used in rejection when an animation is cancelled */
 export class AnimCancelled {
     public isCancelled: true = true;
 }
