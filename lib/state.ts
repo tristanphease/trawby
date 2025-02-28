@@ -8,7 +8,7 @@ export default class CanvasStateManager<S> {
     }
 
     /** Sets the state of the animation to the one provided */
-    public setState(newState: S) {
+    setState(newState: S) {
         this.currentState = newState;
     }
 }

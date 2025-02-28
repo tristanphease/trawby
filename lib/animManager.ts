@@ -54,17 +54,17 @@ export default class AnimManager<S> {
     }
 
     /** Starts the animation */
-    public start() {
+    start() {
         const startState = this.canvasStateManager.currentState;
 
-        this.startState(startState);
+        this.#startState(startState);
     }
 
-    public addInterp(animInterpInfo: AnimInterpInfo) {
+    addInterp(animInterpInfo: AnimInterpInfo) {
         this.interpAnimations.push(animInterpInfo);
     }
 
-    private startState(newState: S): void {
+    #startState(newState: S): void {
         const animRunsForState = this.stateAnimRuns.get(newState);
 
         if (animRunsForState) {
@@ -98,14 +98,14 @@ export default class AnimManager<S> {
                     }
 
                     this.runUpdate = true;
-                    this.update();
+                    this.#update();
                     break;
                 }
             }
         }
     }
 
-    private endState(currentState: S): void {
+    #endState(currentState: S): void {
         // on end of state, kill all running anims
 
         for (const interpAnim of this.interpAnimations) {
@@ -134,14 +134,14 @@ export default class AnimManager<S> {
         }
     }
 
-    public runEvents<PS>(event: AnimManagerEventEnum, animUtil: AnimUtil<PS>) {
+    runEvents<PS>(event: AnimManagerEventEnum, animUtil: AnimUtil<PS>) {
         const events = this.events.get(event) || [];
         for (const func of events) {
             func(animUtil);
         }
     }
 
-    private update() {
+    #update() {
         const deltaTime = this.animTimer.updateAndGetDeltaTime();
 
         // update interpolated animations
@@ -182,29 +182,29 @@ export default class AnimManager<S> {
 
         if (this.runUpdate) {
             // re-call update
-            globalThis.requestAnimationFrame(this.update.bind(this));
+            globalThis.requestAnimationFrame(this.#update.bind(this));
         }
     }
 
-    public waitTime(timeToWait: number): Promise<void> {
+    waitTime(timeToWait: number): Promise<void> {
         return this.animTimer.waitTime(timeToWait);
     }
 
-    public setState(newState: S) {
+    setState(newState: S) {
         if (this.canvasStateManager.currentState !== newState) {
-            this.endState(this.canvasStateManager.currentState);
-            this.startState(newState);
+            this.#endState(this.canvasStateManager.currentState);
+            this.#startState(newState);
             this.canvasStateManager.setState(newState);
         }
     }
 
-    public endManager() {
+    endManager() {
         const currentState = this.canvasStateManager.currentState;
-        this.endState(currentState);
+        this.#endState(currentState);
         this.runEvents(AnimManagerEventEnum.ManagerEnd, this.animUtil);
     }
 
-    public setZoomPoint(zoomAmount: number, x: number, y: number) {
+    setZoomPoint(zoomAmount: number, x: number, y: number) {
         this.animRunner.setZoomPoint(zoomAmount, x, y);
     }
 }

@@ -14,7 +14,7 @@ export default class Color {
     }
 
     /** Generate hex string for use in other color related sections */
-    public toHexString(): string {
+    toHexString(): string {
         const red = hexStringFromNumber(this.red);
         const green = hexStringFromNumber(this.green);
         const blue = hexStringFromNumber(this.blue);
