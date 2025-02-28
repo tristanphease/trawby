@@ -4,6 +4,7 @@ import type AnimUtil from "./animUtil.ts";
 import { AnimRunType } from "./builder.ts";
 import type { StateEventEnum } from "./stateBuilder.ts";
 
+/** A collection of anims to run for a state */
 export default class StateAnims<S> {
     anims: Array<AnimObjectInfo<S, Array<AnimObject>>>;
     stateEvents: Map<StateEventEnum, Array<(animUtil: AnimUtil<S>) => void>>;
