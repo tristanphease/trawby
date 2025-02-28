@@ -119,7 +119,7 @@ class AnimBuilderObject implements AnimBuilder {
     }
 
     /** Creates the states that the builder functions for. */
-    public withState<S>(startState: S): AnimBuilderWithState<S> {
+    withState<S>(startState: S): AnimBuilderWithState<S> {
         return new AnimBuilderObjectWithState<S>(
             startState,
             this.dims,
@@ -213,7 +213,7 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
         const canvasManager = createCanvasManager(canvasId, this.dims);
         const animTimer = new AnimTimer();
 
-        return this.buildManager(canvasManager, animTimer, 0);
+        return this.#buildManager(canvasManager, animTimer, 0);
     }
 
     /** Builds a sub manager, used internally */
@@ -222,11 +222,11 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
         animTimer: AnimTimer,
         depth: number,
     ): AnimManager<S> {
-        return this.buildManager(canvasManager, animTimer, depth);
+        return this.#buildManager(canvasManager, animTimer, depth);
     }
 
     /** Build up the manager */
-    private buildManager(
+    #buildManager(
         canvasManager: CanvasManager,
         animTimer: AnimTimer,
         depth: number,

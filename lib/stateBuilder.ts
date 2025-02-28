@@ -14,22 +14,22 @@ export function createAnimForState<S>(): AnimStateBuilder<S> {
 export class AnimStateBuilder<S> {
     // i can't figure out a better way to do this, sometimes i hate typescript...
     // deno-lint-ignore no-explicit-any
-    private anims: Array<AnimObjectInfo<S, any>>;
-    private events: Map<StateEventEnum, Array<(animUtil: AnimUtil<S>) => void>>;
+    #anims: Array<AnimObjectInfo<S, any>>;
+    #events: Map<StateEventEnum, Array<(animUtil: AnimUtil<S>) => void>>;
 
     animRunBuilderType: AnimRunBuilderType.AnimStateBuilder =
         AnimRunBuilderType.AnimStateBuilder;
 
     constructor() {
-        this.anims = [];
-        this.events = new Map();
+        this.#anims = [];
+        this.#events = new Map();
     }
 
     /** Adds an anim to be run */
     addAnim<T extends Array<AnimObject>>(
         anim: AnimObjectInfo<S, T>,
     ): this {
-        this.anims.push(anim);
+        this.#anims.push(anim);
         return this;
     }
 
@@ -42,7 +42,7 @@ export class AnimStateBuilder<S> {
         event: StateEventEnum,
         callback: (animUtil: AnimUtil<S>) => void,
     ): this {
-        addToMapArray(this.events, event, callback);
+        addToMapArray(this.#events, event, callback);
         return this;
     }
 
@@ -56,7 +56,7 @@ export class AnimStateBuilder<S> {
         type: StateEventEnum,
         callback: (animUtil: AnimUtil<S>) => void,
     ): this {
-        const eventArray = this.events.get(type);
+        const eventArray = this.#events.get(type);
 
         if (eventArray) {
             for (let index = eventArray.length - 1; index >= 0; index--) {
@@ -72,8 +72,8 @@ export class AnimStateBuilder<S> {
     /** Builds the AnimState for use in the AnimBuilder */
     build(): StateAnims<S> {
         return new StateAnims<S>(
-            this.anims,
-            this.events,
+            this.#anims,
+            this.#events,
         );
     }
 }

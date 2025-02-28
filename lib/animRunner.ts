@@ -3,22 +3,22 @@ import { addToMapArray, getMapOfMap } from "./util/mapUtil.ts";
 
 /** An object that runs the anims on the objects */
 export default class AnimRunner {
-    private animObjects: Set<AnimObject>;
+    #animObjects: Set<AnimObject>;
     // map by depth first, then by state
-    private animObjectsByStateAndDepth: Map<
+    #animObjectsByStateAndDepth: Map<
         number,
         Map<unknown, Array<AnimObject>>
     >;
 
-    private zoomPoint: { x: number; y: number } | null;
-    private zoomAmount: number;
+    #zoomPoint: { x: number; y: number } | null;
+    #zoomAmount: number;
 
     constructor() {
-        this.animObjects = new Set();
-        this.animObjectsByStateAndDepth = new Map();
+        this.#animObjects = new Set();
+        this.#animObjectsByStateAndDepth = new Map();
 
-        this.zoomPoint = null;
-        this.zoomAmount = 1;
+        this.#zoomPoint = null;
+        this.#zoomAmount = 1;
     }
 
     /** Add anim object to runner, returns whether was added or already exists */
@@ -27,10 +27,10 @@ export default class AnimRunner {
         stateAdded: S,
         depth: number,
     ): boolean {
-        if (!this.animObjects.has(animObject)) {
-            this.animObjects.add(animObject);
+        if (!this.#animObjects.has(animObject)) {
+            this.#animObjects.add(animObject);
             const animObjectsByState = getMapOfMap(
-                this.animObjectsByStateAndDepth,
+                this.#animObjectsByStateAndDepth,
                 depth,
             );
             addToMapArray(
@@ -45,14 +45,14 @@ export default class AnimRunner {
 
     removeAnimObjectsByState<S>(state: S, depth: number) {
         const animObjectsByState = getMapOfMap(
-            this.animObjectsByStateAndDepth,
+            this.#animObjectsByStateAndDepth,
             depth,
         );
         const animObjects = animObjectsByState.get(state);
 
         if (animObjects) {
             for (const animObject of animObjects) {
-                this.animObjects.delete(animObject);
+                this.#animObjects.delete(animObject);
             }
 
             animObjectsByState.delete(state);
@@ -60,31 +60,31 @@ export default class AnimRunner {
     }
 
     /** Main draw loop for anim objects */
-    public draw(ctx: CanvasRenderingContext2D): void {
+    draw(ctx: CanvasRenderingContext2D): void {
         ctx.save();
 
-        if (this.zoomAmount != 1) {
-            if (this.zoomPoint != null) {
-                ctx.translate(this.zoomPoint.x, this.zoomPoint.y);
+        if (this.#zoomAmount != 1) {
+            if (this.#zoomPoint != null) {
+                ctx.translate(this.#zoomPoint.x, this.#zoomPoint.y);
             }
-            ctx.scale(this.zoomAmount, this.zoomAmount);
+            ctx.scale(this.#zoomAmount, this.#zoomAmount);
 
-            if (this.zoomPoint != null) {
-                ctx.translate(-this.zoomPoint.x, -this.zoomPoint.y);
+            if (this.#zoomPoint != null) {
+                ctx.translate(-this.#zoomPoint.x, -this.#zoomPoint.y);
             }
         }
 
-        for (const animObject of this.animObjects) {
+        for (const animObject of this.#animObjects) {
             animObject.draw(ctx);
         }
         ctx.restore();
     }
 
-    public setZoomPoint(zoomAmount: number, x: number, y: number) {
-        this.zoomPoint = {
+    setZoomPoint(zoomAmount: number, x: number, y: number) {
+        this.#zoomPoint = {
             x,
             y,
         };
-        this.zoomAmount = zoomAmount;
+        this.#zoomAmount = zoomAmount;
     }
 }

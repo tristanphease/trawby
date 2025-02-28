@@ -28,19 +28,19 @@ export default class AnimInterpInfo {
     }
 
     /** Whether the interp anim is completed */
-    public isCompleted(): boolean {
+    isCompleted(): boolean {
         return this.timeThrough >= 1;
     }
 
     /** Update the interp with new values */
-    public update(deltaTime: number) {
+    update(deltaTime: number) {
         this.timeThrough += deltaTime / this.totalTime;
 
-        const currentValue = this.getCurrentValue();
+        const currentValue = this.#getCurrentValue();
         this.callbackFunction(currentValue);
     }
 
-    private getCurrentValue(): number {
+    #getCurrentValue(): number {
         let firstKeyframe: AnimKeyframe | null = null;
         let lastKeyframe: AnimKeyframe | null = null;
 

@@ -4,15 +4,15 @@ import type { AnimKeyframe } from "./keyframe.ts";
 
 /** Util class for doing animations */
 export default class AnimUtil<S> {
-    private animManager: AnimManager<S>;
+    #animManager: AnimManager<S>;
 
     constructor(animManager: AnimManager<S>) {
-        this.animManager = animManager;
+        this.#animManager = animManager;
     }
 
     /* waits for the time provided in milliseconds */
-    public waitTime(timeInMs: number): Promise<void> {
-        return this.animManager.waitTime(timeInMs);
+    waitTime(timeInMs: number): Promise<void> {
+        return this.#animManager.waitTime(timeInMs);
     }
 
     /**
@@ -22,7 +22,7 @@ export default class AnimUtil<S> {
      * @param callbackFn the function that returns the value being interpolated
      * @returns promise that completes when the interp is finished
      */
-    public interp(
+    interp(
         keyframes: Array<AnimKeyframe>,
         timeTaken: number,
         callbackFn: (value: number) => void,
@@ -39,7 +39,7 @@ export default class AnimUtil<S> {
                     reject(new AnimCancelled());
                 },
             );
-            this.animManager.addInterp(animInterp);
+            this.#animManager.addInterp(animInterp);
         });
     }
 
@@ -49,27 +49,27 @@ export default class AnimUtil<S> {
      * @param x x value of point to zoom on
      * @param y y value of point to zoom on
      */
-    public setZoomPoint(zoomAmount: number, x: number, y: number) {
-        this.animManager.setZoomPoint(zoomAmount, x, y);
+    setZoomPoint(zoomAmount: number, x: number, y: number) {
+        this.#animManager.setZoomPoint(zoomAmount, x, y);
     }
 
     /**
      * Sets the state, will cancel all running anims and continue with the anim as it is
      * @param newState
      */
-    public setState(newState: S) {
-        this.animManager.setState(newState);
+    setState(newState: S) {
+        this.#animManager.setState(newState);
     }
 
     /**
      * Ends the current state and manager
      */
-    public endManager() {
-        this.animManager.endManager();
+    endManager() {
+        this.#animManager.endManager();
     }
 }
 
 /** Object to be used in rejection when an animation is cancelled */
 export class AnimCancelled {
-    public isCancelled: true = true;
+    isCancelled: true = true;
 }

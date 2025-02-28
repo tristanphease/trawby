@@ -25,7 +25,7 @@ export default class StateAnims<S> {
     }
 
     /** Checks if animations have just all completed */
-    public checkJustCompletedAnims(): boolean {
+    checkJustCompletedAnims(): boolean {
         if (this.completed) {
             return false;
         }
@@ -41,7 +41,7 @@ export default class StateAnims<S> {
     }
 
     /** Runs events for the enum as specified */
-    public runEvents(stateEvent: StateEventEnum, animUtil: AnimUtil<S>) {
+    runEvents(stateEvent: StateEventEnum, animUtil: AnimUtil<S>) {
         const events = this.stateEvents.get(stateEvent) || [];
         for (const func of events) {
             func(animUtil);
