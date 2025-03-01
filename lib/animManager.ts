@@ -2,11 +2,16 @@ import type AnimInterpInfo from "./animInterp.ts";
 import type AnimRunner from "./animRunner.ts";
 import type AnimTimer from "./animTimer.ts";
 import AnimUtil from "./animUtil.ts";
-import { AnimManagerEventEnum, type AnimRun, AnimRunType } from "./builder.ts";
+import {
+    AnimManagerEvent,
+    type AnimManagerEventEnum,
+    type AnimRun,
+    AnimRunType,
+} from "./builder.ts";
 import type CanvasManager from "./canvasManager.ts";
 import type CanvasStateManager from "./state.ts";
 import type StateAnims from "./stateAnims.ts";
-import { StateEventEnum } from "./stateBuilder.ts";
+import { StateEvent } from "./stateBuilder.ts";
 
 export default class AnimManager<S> {
     animRunner: AnimRunner;
@@ -20,7 +25,7 @@ export default class AnimManager<S> {
     >;
     depth: number;
 
-    animRunType: AnimRunType.AnimManager = AnimRunType.AnimManager;
+    animRunType: typeof AnimRunType.AnimManager = AnimRunType.AnimManager;
 
     // not passed in
     animUtil: AnimUtil<S>;
@@ -53,6 +58,16 @@ export default class AnimManager<S> {
         this.runUpdate = false;
     }
 
+    /** Sets the speed of the animation */
+    setSpeed(speed: number) {
+        this.animTimer.speed = speed;
+    }
+
+    /** Toggles whether the anim timer is paused, returns whether it's paused */
+    togglePause(): boolean {
+        return this.animTimer.togglePause();
+    }
+
     /** Starts the animation */
     start() {
         const startState = this.canvasStateManager.currentState;
@@ -75,7 +90,7 @@ export default class AnimManager<S> {
                     break;
                 case AnimRunType.StateAnims: {
                     (<StateAnims<S>> animRunsForState).runEvents(
-                        StateEventEnum.Start,
+                        StateEvent.Start,
                         this.animUtil,
                     );
 
@@ -125,7 +140,7 @@ export default class AnimManager<S> {
                     break;
                 case AnimRunType.StateAnims:
                     (<StateAnims<S>> animRunsForState).runEvents(
-                        StateEventEnum.End,
+                        StateEvent.End,
                         this.animUtil,
                     );
                     this.animTimer.cancelAnims();
@@ -166,7 +181,7 @@ export default class AnimManager<S> {
             if (animRuns.animRunType === AnimRunType.StateAnims) {
                 if (animRuns.checkJustCompletedAnims()) {
                     (<StateAnims<S>> animRuns).runEvents(
-                        StateEventEnum.AnimsCompleted,
+                        StateEvent.AnimsCompleted,
                         this.animUtil,
                     );
                 }
@@ -201,7 +216,7 @@ export default class AnimManager<S> {
     endManager() {
         const currentState = this.canvasStateManager.currentState;
         this.#endState(currentState);
-        this.runEvents(AnimManagerEventEnum.ManagerEnd, this.animUtil);
+        this.runEvents(AnimManagerEvent.ManagerEnd, this.animUtil);
     }
 
     setZoomPoint(zoomAmount: number, x: number, y: number) {

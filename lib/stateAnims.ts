@@ -9,7 +9,7 @@ export default class StateAnims<S> {
     anims: Array<AnimObjectInfo<S, Array<AnimObject>>>;
     stateEvents: Map<StateEventEnum, Array<(animUtil: AnimUtil<S>) => void>>;
 
-    animRunType: AnimRunType.StateAnims = AnimRunType.StateAnims;
+    animRunType: typeof AnimRunType.StateAnims = AnimRunType.StateAnims;
     completed: boolean;
 
     constructor(

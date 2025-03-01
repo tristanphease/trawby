@@ -1,4 +1,3 @@
-import { StateEventEnum } from "../mod.ts";
 import AnimManager from "./animManager.ts";
 import AnimRunner from "./animRunner.ts";
 import AnimTimer from "./animTimer.ts";
@@ -6,7 +5,7 @@ import type AnimUtil from "./animUtil.ts";
 import CanvasManager from "./canvasManager.ts";
 import CanvasStateManager from "./state.ts";
 import type StateAnims from "./stateAnims.ts";
-import type { AnimStateBuilder } from "./stateBuilder.ts";
+import { type AnimStateBuilder, StateEvent } from "./stateBuilder.ts";
 import { addToMapArray } from "./util/mapUtil.ts";
 
 /** Default values for the dimensions */
@@ -30,10 +29,12 @@ type AnimRunBuilder =
     | AnimStateBuilder<any>;
 
 /** Types of anim runs during building */
-export enum AnimRunBuilderType {
-    AnimBuilderWithState,
-    AnimStateBuilder,
-}
+export const AnimRunBuilderType = {
+    AnimBuilderWithState: 0,
+    AnimStateBuilder: 1,
+} as const;
+export type AnimRunBuilderTypeEnum =
+    typeof AnimRunBuilderType[keyof typeof AnimRunBuilderType];
 
 /** Anim to be run is either a sub manager or a set of anims for the state */
 export type AnimRun =
@@ -41,10 +42,11 @@ export type AnimRun =
     | StateAnims<unknown>;
 
 /** Types of anim runs */
-export enum AnimRunType {
-    AnimManager,
-    StateAnims,
-}
+export const AnimRunType = {
+    AnimManager: 0,
+    StateAnims: 1,
+} as const;
+export type AnimRunTypeEnum = typeof AnimRunType[keyof typeof AnimRunType];
 
 /** The base of the anim builder */
 interface AnimBuilderBase {
@@ -88,14 +90,16 @@ export interface AnimBuilderWithState<S> extends AnimBuilderBase {
     ): this;
 
     /** For internal usage to determine the type of anim run */
-    animRunBuilderType: AnimRunBuilderType.AnimBuilderWithState;
+    animRunBuilderType: typeof AnimRunBuilderType.AnimBuilderWithState;
 }
 
 /** Events for states to run code on them */
-export enum AnimManagerEventEnum {
+export const AnimManagerEvent = {
     /** When the manager finishes with the states it has to run through */
-    ManagerEnd,
-}
+    ManagerEnd: 0,
+} as const;
+export type AnimManagerEventEnum =
+    typeof AnimManagerEvent[keyof typeof AnimManagerEvent];
 
 /** For creating an animation */
 export function createAnim(): AnimBuilder {
@@ -133,8 +137,7 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
     startState: S;
     animRunBuilders: Map<S, AnimRunBuilder>;
 
-    animRunBuilderType: AnimRunBuilderType.AnimBuilderWithState =
-        AnimRunBuilderType.AnimBuilderWithState;
+    animRunBuilderType = AnimRunBuilderType.AnimBuilderWithState;
 
     // state order stuff
     explicitStateOrder: boolean;
@@ -244,7 +247,7 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
                     if (index < this.stateOrder.length - 1) {
                         const nextState = this.stateOrder[index + 1];
                         animRun.addEventListener(
-                            AnimManagerEventEnum.ManagerEnd,
+                            AnimManagerEvent.ManagerEnd,
                             (animUtil) => {
                                 animUtil.setState(nextState);
                             },
@@ -268,7 +271,7 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
                     if (index < this.stateOrder.length - 1) {
                         const nextState = this.stateOrder[index + 1];
                         animRun.addEventListener(
-                            StateEventEnum.AnimsCompleted,
+                            StateEvent.AnimsCompleted,
                             (animUtil) => {
                                 animUtil.setState(nextState);
                             },
@@ -276,7 +279,7 @@ export class AnimBuilderObjectWithState<S> implements AnimBuilderWithState<S> {
                     } else {
                         // final one in array
                         animRun.addEventListener(
-                            StateEventEnum.AnimsCompleted,
+                            StateEvent.AnimsCompleted,
                             (animUtil) => {
                                 // want to run manager end at this point
                                 animUtil.endManager();
