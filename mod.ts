@@ -25,11 +25,8 @@ export type {
     AnimBuilderWithState,
 } from "./lib/builder.ts";
 
-export {
-    AnimStateBuilder,
-    createAnimForState,
-    StateEventEnum,
-} from "./lib/stateBuilder.ts";
+export { AnimStateBuilder, createAnimForState } from "./lib/stateBuilder.ts";
+export type { StateEventEnum } from "./lib/stateBuilder.ts";
 
 export type { AnimFunction } from "./lib/animFunction.ts";
 

@@ -14,10 +14,15 @@ export default class AnimTimer {
 
     #waits: Array<WaitInfo>;
 
+    speed: number;
+    #paused: boolean;
+
     constructor() {
         this.#currentTime = 0;
         this.#lastTime = null;
         this.#waits = [];
+        this.speed = 1;
+        this.#paused = false;
     }
 
     /** Start the timer */
@@ -38,9 +43,12 @@ export default class AnimTimer {
         if (this.#lastTime === null) {
             this.#lastTime = newTime;
         }
-        const deltaTime = newTime - this.#lastTime;
+        const deltaTime = (newTime - this.#lastTime) * this.speed;
 
         this.#lastTime = newTime;
+        if (this.#paused) {
+            return deltaTime;
+        }
         this.#currentTime += deltaTime;
 
         for (let index = this.#waits.length - 1; index >= 0; index--) {
@@ -79,5 +87,11 @@ export default class AnimTimer {
             waitInfo.rejectFunction();
         }
         this.#waits = [];
+    }
+
+    /** Toggles whether the anim timer is paused, returns whether it's paused */
+    togglePause(): boolean {
+        this.#paused = !this.#paused;
+        return this.#paused;
     }
 }

@@ -17,7 +17,7 @@ export class AnimStateBuilder<S> {
     #anims: Array<AnimObjectInfo<S, any>>;
     #events: Map<StateEventEnum, Array<(animUtil: AnimUtil<S>) => void>>;
 
-    animRunBuilderType: AnimRunBuilderType.AnimStateBuilder =
+    animRunBuilderType: typeof AnimRunBuilderType.AnimStateBuilder =
         AnimRunBuilderType.AnimStateBuilder;
 
     constructor() {
@@ -79,11 +79,12 @@ export class AnimStateBuilder<S> {
 }
 
 /** Events for states to run code on them */
-export enum StateEventEnum {
+export const StateEvent = {
     /** When a state starts */
-    Start,
+    Start: 0,
     /** When a state ends */
-    End,
+    End: 1,
     /** When a state has all its animations completed */
-    AnimsCompleted,
-}
+    AnimsCompleted: 2,
+} as const;
+export type StateEventEnum = typeof StateEvent[keyof typeof StateEvent];
