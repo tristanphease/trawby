@@ -3,9 +3,9 @@ import type AnimObject from "./animObject.ts";
 import type AnimUtil from "./animUtil.ts";
 
 /** Class for creating an anim on some object(s) */
-export default class AnimObjectInfo<S, T extends Array<AnimObject>> {
+export default class AnimObjectInfo<T extends Array<AnimObject>> {
     #animObjects: T;
-    #animFunctions: Array<AnimFunction<S, T>>;
+    #animFunctions: Array<AnimFunction<T>>;
     #completedAnims: number;
 
     /** Create a new anim object info, pass through as many anim objects as you want for the anims */
@@ -16,7 +16,7 @@ export default class AnimObjectInfo<S, T extends Array<AnimObject>> {
     }
 
     /** Add anim to be run, each one will be run in parallel */
-    withAnim(animFunction: AnimFunction<S, T>): this {
+    withAnim(animFunction: AnimFunction<T>): this {
         this.#animFunctions.push(animFunction);
         return this;
     }
@@ -27,7 +27,7 @@ export default class AnimObjectInfo<S, T extends Array<AnimObject>> {
     }
 
     /** Run the anim object */
-    run(animUtil: AnimUtil<S>) {
+    run(animUtil: AnimUtil) {
         for (const animFunction of this.#animFunctions) {
             animFunction(animUtil, ...this.#animObjects)
                 .then(() => this.#completedAnims += 1)

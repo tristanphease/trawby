@@ -6,16 +6,19 @@ import StateAnims from "./stateAnims.ts";
 import { addToMapArray } from "./util/mapUtil.ts";
 
 /** Create anim associated with a state */
-export function createAnimForState<S>(): AnimStateBuilder<S> {
-    return new AnimStateBuilder<S>();
+export function createAnimForState(): AnimStateBuilder {
+    return new AnimStateBuilder();
 }
 
 /** Builder object for creating an anim */
-export class AnimStateBuilder<S> {
+export class AnimStateBuilder {
     // i can't figure out a better way to do this, sometimes i hate typescript...
     // deno-lint-ignore no-explicit-any
-    #anims: Array<AnimObjectInfo<S, any>>;
-    #events: Map<StateEventEnum, Array<(animUtil: AnimUtil<S>) => void>>;
+    #anims: Array<AnimObjectInfo<any>>;
+    #events: Map<
+        StateEventEnum,
+        Array<(animUtil: AnimUtil, stateAnims: StateAnims) => void>
+    >;
 
     animRunBuilderType: typeof AnimRunBuilderType.AnimStateBuilder =
         AnimRunBuilderType.AnimStateBuilder;
@@ -27,7 +30,7 @@ export class AnimStateBuilder<S> {
 
     /** Adds an anim to be run */
     addAnim<T extends Array<AnimObject>>(
-        anim: AnimObjectInfo<S, T>,
+        anim: AnimObjectInfo<T>,
     ): this {
         this.#anims.push(anim);
         return this;
@@ -40,7 +43,7 @@ export class AnimStateBuilder<S> {
      */
     addEventListener(
         event: StateEventEnum,
-        callback: (animUtil: AnimUtil<S>) => void,
+        callback: (animUtil: AnimUtil, stateAnims: StateAnims) => void,
     ): this {
         addToMapArray(this.#events, event, callback);
         return this;
@@ -54,7 +57,7 @@ export class AnimStateBuilder<S> {
      */
     removeEventListener(
         type: StateEventEnum,
-        callback: (animUtil: AnimUtil<S>) => void,
+        callback: (animUtil: AnimUtil) => void,
     ): this {
         const eventArray = this.#events.get(type);
 
@@ -70,8 +73,8 @@ export class AnimStateBuilder<S> {
     }
 
     /** Builds the AnimState for use in the AnimBuilder */
-    build(): StateAnims<S> {
-        return new StateAnims<S>(
+    build(): StateAnims {
+        return new StateAnims(
             this.#anims,
             this.#events,
         );
@@ -80,11 +83,11 @@ export class AnimStateBuilder<S> {
 
 /** Events for states to run code on them */
 export const StateEvent = {
-    /** When a state starts */
+    /** Runs when a state starts */
     Start: 0,
-    /** When a state ends */
+    /** Runs when a state ends */
     End: 1,
-    /** When a state has all its animations completed */
+    /** Runs when a state has all its animations completed */
     AnimsCompleted: 2,
 } as const;
 export type StateEventEnum = typeof StateEvent[keyof typeof StateEvent];

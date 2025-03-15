@@ -18,12 +18,9 @@
  * @module
  */
 
-export { createAnim } from "./lib/builder.ts";
+export { AnimRunEvent, AnimRunType, createAnim } from "./lib/builder.ts";
 
-export type {
-    AnimBuilderObjectWithState,
-    AnimBuilderWithState,
-} from "./lib/builder.ts";
+export type { AnimBuilder, AnimRun, AnimRunEventEnum } from "./lib/builder.ts";
 
 export { AnimStateBuilder, createAnimForState } from "./lib/stateBuilder.ts";
 export type { StateEventEnum } from "./lib/stateBuilder.ts";
@@ -47,3 +44,6 @@ export {
     default as Color,
     getRandomColor,
 } from "./lib/util/color.ts";
+
+export { AnimMode } from "./lib/animMode.ts";
+export type { AnimModeEnum } from "./lib/animMode.ts";

@@ -1,6 +1,6 @@
 {
     "name": "@trawby/trawby",
-    "version": "0.0.8",
+    "version": "0.0.9",
     "exports": "./mod.ts",
     "license": "MIT",
     "compilerOptions": {
@@ -11,5 +11,8 @@
     },
     "fmt": {
         "indentWidth": 4
+    },
+    "imports": {
+        "@trawby/html-tree": "jsr:@trawby/html-tree@^0.0.1"
     }
 }
