@@ -3,10 +3,10 @@ import type AnimManager from "./animManager.ts";
 import type { AnimKeyframe } from "./keyframe.ts";
 
 /** Util class for doing animations */
-export default class AnimUtil<S> {
-    #animManager: AnimManager<S>;
+export default class AnimUtil {
+    #animManager: AnimManager;
 
-    constructor(animManager: AnimManager<S>) {
+    constructor(animManager: AnimManager) {
         this.#animManager = animManager;
     }
 
@@ -57,15 +57,24 @@ export default class AnimUtil<S> {
      * Sets the state, will cancel all running anims and continue with the anim as it is
      * @param newState
      */
-    setState(newState: S) {
+    setState(newState: string) {
         this.#animManager.setState(newState);
     }
 
     /**
-     * Ends the current state and manager
+     * Moves along to the next state.\
+     * If on an animstate, moves to the next state according to the parent anim manager.\
+     * If on an anim manager, moves to the next state according to this
      */
-    endManager() {
-        this.#animManager.endManager();
+    nextState() {
+        this.#animManager.nextState();
+    }
+
+    /**
+     * Gets the parent of the animutil
+     */
+    getParentAnimUtil(): AnimUtil | null {
+        return this.#animManager.parentAnimManager?.animUtil ?? null;
     }
 }
 

@@ -1,4 +1,5 @@
 import type AnimInterpInfo from "./animInterp.ts";
+import type { AnimModeEnum } from "./animMode.ts";
 import type AnimRunner from "./animRunner.ts";
 import type AnimTimer from "./animTimer.ts";
 import AnimUtil from "./animUtil.ts";
@@ -9,41 +10,66 @@ import {
     AnimRunType,
 } from "./builder.ts";
 import type CanvasManager from "./canvasManager.ts";
-import type CanvasStateManager from "./state.ts";
-import type StateAnims from "./stateAnims.ts";
+import type StateManager from "./stateManager.ts";
 import { StateEvent } from "./stateBuilder.ts";
+import { Tree } from "@trawby/html-tree";
 
-export default class AnimManager<S> {
+export interface IAnimManager {
+    /** Sets the speed of the animation */
+    setSpeed(speed: number): void;
+
+    /** Toggles whether the anim timer is paused, returns whether it's paused */
+    togglePause(): boolean;
+
+    /** Starts the animation */
+    start(): void;
+
+    /** Get the anim mode of the manager */
+    getAnimMode(): AnimModeEnum;
+}
+
+export default class AnimManager implements IAnimManager {
     animRunner: AnimRunner;
     canvasManager: CanvasManager;
-    canvasStateManager: CanvasStateManager<S>;
-    stateAnimRuns: Map<S, AnimRun>;
+    canvasStateManager: StateManager;
+    stateAnimRuns: Map<string, AnimRun>;
     animTimer: AnimTimer;
     events: Map<
         AnimManagerEventEnum,
-        Array<(animUtil: AnimUtil<unknown>) => void>
+        Array<
+            (animUtil: AnimUtil, animManager: AnimManager) => void
+        >
     >;
     depth: number;
+    animMode: AnimModeEnum;
 
     animRunType: typeof AnimRunType.AnimManager = AnimRunType.AnimManager;
 
     // not passed in
-    animUtil: AnimUtil<S>;
+    animUtil: AnimUtil;
     interpAnimations: Array<AnimInterpInfo>;
 
     runUpdate: boolean;
 
+    parentAnimManager: AnimManager | null;
+
     constructor(
         animRunner: AnimRunner,
         canvasManager: CanvasManager,
-        canvasStateManager: CanvasStateManager<S>,
-        stateAnimRuns: Map<S, AnimRun>,
+        canvasStateManager: StateManager,
+        stateAnimRuns: Map<string, AnimRun>,
         animTimer: AnimTimer,
         events: Map<
             AnimManagerEventEnum,
-            Array<(animUtil: AnimUtil<unknown>) => void>
+            Array<
+                (
+                    animUtil: AnimUtil,
+                    animManager: AnimManager,
+                ) => void
+            >
         >,
         depth: number,
+        animMode: AnimModeEnum,
     ) {
         this.animRunner = animRunner;
         this.canvasManager = canvasManager;
@@ -52,14 +78,20 @@ export default class AnimManager<S> {
         this.animTimer = animTimer;
         this.events = events;
         this.depth = depth;
+        this.animMode = animMode;
 
         this.animUtil = new AnimUtil(this);
         this.interpAnimations = [];
         this.runUpdate = false;
+        this.parentAnimManager = null;
+    }
+
+    getAnimMode(): AnimModeEnum {
+        return this.animMode;
     }
 
     /** Sets the speed of the animation */
-    setSpeed(speed: number) {
+    setSpeed(speed: number): void {
         this.animTimer.speed = speed;
     }
 
@@ -68,18 +100,23 @@ export default class AnimManager<S> {
         return this.animTimer.togglePause();
     }
 
-    /** Starts the animation */
-    start() {
+    /** Starts the anim manager */
+    start(): void {
         const startState = this.canvasStateManager.currentState;
 
-        this.#startState(startState);
+        this.runEvents(AnimManagerEvent.ManagerStart, this.animUtil);
+
+        if (startState) {
+            this.#startState(startState);
+        }
     }
 
+    /** Adds an interp to the manager */
     addInterp(animInterpInfo: AnimInterpInfo) {
         this.interpAnimations.push(animInterpInfo);
     }
 
-    #startState(newState: S): void {
+    #startState(newState: string): void {
         const animRunsForState = this.stateAnimRuns.get(newState);
 
         if (animRunsForState) {
@@ -89,13 +126,13 @@ export default class AnimManager<S> {
                     animRunsForState.start();
                     break;
                 case AnimRunType.StateAnims: {
-                    (<StateAnims<S>> animRunsForState).runEvents(
+                    animRunsForState.runEvents(
                         StateEvent.Start,
                         this.animUtil,
                     );
 
                     for (
-                        const anim of (<StateAnims<S>> animRunsForState).anims
+                        const anim of animRunsForState.anims
                     ) {
                         const animObjects = anim.getAnimObjects();
                         const context = this.canvasManager.getContext();
@@ -120,7 +157,7 @@ export default class AnimManager<S> {
         }
     }
 
-    #endState(currentState: S): void {
+    #endState(currentState: string): void {
         // on end of state, kill all running anims
 
         for (const interpAnim of this.interpAnimations) {
@@ -139,7 +176,7 @@ export default class AnimManager<S> {
                     // nothing at the moment
                     break;
                 case AnimRunType.StateAnims:
-                    (<StateAnims<S>> animRunsForState).runEvents(
+                    animRunsForState.runEvents(
                         StateEvent.End,
                         this.animUtil,
                     );
@@ -149,10 +186,10 @@ export default class AnimManager<S> {
         }
     }
 
-    runEvents<PS>(event: AnimManagerEventEnum, animUtil: AnimUtil<PS>) {
+    runEvents(event: AnimManagerEventEnum, animUtil: AnimUtil) {
         const events = this.events.get(event) || [];
         for (const func of events) {
-            func(animUtil);
+            func(animUtil, this);
         }
     }
 
@@ -176,14 +213,16 @@ export default class AnimManager<S> {
         }
         // check for completed anims
         const currentState = this.canvasStateManager.currentState;
-        const animRuns = this.stateAnimRuns.get(currentState);
-        if (animRuns) {
-            if (animRuns.animRunType === AnimRunType.StateAnims) {
-                if (animRuns.checkJustCompletedAnims()) {
-                    (<StateAnims<S>> animRuns).runEvents(
-                        StateEvent.AnimsCompleted,
-                        this.animUtil,
-                    );
+        if (currentState) {
+            const animRuns = this.stateAnimRuns.get(currentState);
+            if (animRuns) {
+                if (animRuns.animRunType === AnimRunType.StateAnims) {
+                    if (animRuns.checkJustCompletedAnims()) {
+                        animRuns.runEvents(
+                            StateEvent.AnimsCompleted,
+                            this.animUtil,
+                        );
+                    }
                 }
             }
         }
@@ -205,21 +244,43 @@ export default class AnimManager<S> {
         return this.animTimer.waitTime(timeToWait);
     }
 
-    setState(newState: S) {
-        if (this.canvasStateManager.currentState !== newState) {
-            this.#endState(this.canvasStateManager.currentState);
+    setState(newState: string) {
+        const currentState = this.canvasStateManager.currentState;
+        if (currentState !== newState) {
+            if (currentState !== null) {
+                this.#endState(currentState);
+            }
             this.#startState(newState);
             this.canvasStateManager.setState(newState);
         }
     }
 
-    endManager() {
+    nextState() {
+        const nextState = this.canvasStateManager.getNextState();
+        if (nextState !== null) {
+            this.setState(nextState);
+        } else {
+            this.#endManager();
+        }
+    }
+
+    #endManager() {
         const currentState = this.canvasStateManager.currentState;
-        this.#endState(currentState);
+        if (currentState !== null) {
+            this.#endState(currentState);
+        }
         this.runEvents(AnimManagerEvent.ManagerEnd, this.animUtil);
     }
 
     setZoomPoint(zoomAmount: number, x: number, y: number) {
         this.animRunner.setZoomPoint(zoomAmount, x, y);
+    }
+
+    /** Exports the anim manager as a tree for custom usage */
+    exposeAsTree(): Tree<AnimRun> {
+        const childrenTree: Array<Tree<AnimRun>> = Array.from(
+            this.stateAnimRuns.values().map((a) => a.exposeAsTree()),
+        );
+        return Tree.create(<AnimRun> this, childrenTree);
     }
 }
