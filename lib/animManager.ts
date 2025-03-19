@@ -270,6 +270,7 @@ export default class AnimManager implements IAnimManager {
             this.#endState(currentState);
         }
         this.runEvents(AnimManagerEvent.ManagerEnd, this.animUtil);
+        this.runUpdate = false;
     }
 
     setZoomPoint(zoomAmount: number, x: number, y: number) {
