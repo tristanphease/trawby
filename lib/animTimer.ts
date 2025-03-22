@@ -64,6 +64,7 @@ export default class AnimTimer {
 
     /**
      * Function for asynchronously waiting an amount of time before continuing
+     * Note that small numbers of milliseconds won't work effectively ( < 10 ), instead you should consider using interp for processes which require similar things
      * @param timeToWait Time to wait in milliseconds
      * @returns A promise that completes when the time is finished
      */
